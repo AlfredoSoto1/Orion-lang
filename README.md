@@ -1,4 +1,4 @@
-# Orion-lang
+# Orion-lang / PC2
 
 ## Motivation
 
