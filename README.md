@@ -1,4 +1,4 @@
-# C²-lang
+# Orion C²-lang
 
 ## Motivation
 
