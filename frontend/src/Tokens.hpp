@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <variant>
 
 namespace compiler {
@@ -226,15 +227,38 @@ namespace compiler {
     KEYWORD,
     IDENTIFIER,
     LITERAL,
+    PUNCTUATOR,
     OPERATOR,
-    STRING,
     COMMENT,
     ENDOF,
     UNKNOWN,
   };
 
+  using TokenCategory = std::variant<Keyword,           // Keyword
+                                     Literal,           // Literal
+                                     Punctuator,        // Punctuator
+                                     ArithOperator,     // ArithOperator
+                                     AssignOperator,    // AssignOperator
+                                     LogicOperator,     // LogicOperator
+                                     BitwiseOperator>;  // BitwiseOperator
+
+  /**
+   * @brief Represents an identifier in the source code.
+   *
+   */
+  struct Identifier {
+    uint64_t uid;
+    std::string name;
+  };
+
+  /**
+   * @brief Represents a token in the source code.
+   *
+   */
   struct Token {
     TokenType type;
-    std::variant<Literal> value;
+    std::optional<TokenCategory> category;
+    std::optional<std::string> identifier;
+    std::optional<std::string> literalValue;
   };
 }  // namespace compiler
