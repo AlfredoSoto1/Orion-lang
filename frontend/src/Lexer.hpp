@@ -10,33 +10,42 @@ namespace compiler {
 
   class LexerError {};
 
+  class TokenStream {
+  public:
+    const Token& next();
+    const Token& current() const;
+
+    bool hasNext() const;
+  };
+
   class Lexer {
   public:
     Lexer(const std::string& src);
     std::vector<Token> tokenize();
 
-  private:
-    std::string path;  // Defines the path of where is working
-    std::string source;
-    size_t pos = 0;   // Horizontal line position
-    size_t line = 0;  // Vertical line position
+    TokenStream stream();
 
+  private:
     std::unordered_set<std::string> keywords = {
         "int",   "float",  "double", "char",  "if",     "else",   "for",
         "while", "return", "void",   "class", "struct", "public", "private"};
 
-    bool isOperator(char c);
     bool isSymbol(char c);
+    bool isOperator(char c);
 
-    char peek();
+    char peek() const;
+    char peekNext() const;
     char advance();
+
     void skipWhitespace();
 
-    Token makeNumber();
-    Token makeString();
+    Token makeKeyword();
+    Token makeIdentifier();
+    Token makeStringLiteral();
+    Token makeNumericLiteral();
+    Token makePunctuator();
     Token makeComment();
     Token makeOperator();
-    Token makeIdentifier();
   };
 
 }  // namespace compiler
