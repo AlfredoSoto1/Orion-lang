@@ -32,10 +32,17 @@ namespace compiler {
 
     bool isSymbol(char c);
     bool isOperator(char c);
+    bool isDigit(char c);
+    bool isAlphaNumeric(char c);
+    bool isPunctuator(char c);
 
-    char peek() const;
-    char peekNext() const;
-    char advance();
+    bool isEscaped(char c);
+    bool isWhitespace(char c);
+    bool isWhitespaceOrNewline(char c);
+
+    Token advance();
+    Token peekNextToken() const;
+    Token peekNextNextToken() const;
 
     void skipWhitespace();
 
