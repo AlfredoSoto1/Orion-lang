@@ -3,6 +3,8 @@
     "*.sqlbook": "sql",
     "*.ndjson": "jsonl",
     "*.dbclient-js": "javascript",
-    "cctype": "cpp"
+    "cctype": "cpp",
+    "unordered_set": "cpp",
+    "variant": "cpp"
   }
 }
