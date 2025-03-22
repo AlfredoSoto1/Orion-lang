@@ -6,11 +6,57 @@ namespace compiler {
 
   class KeywordHandler {
   public:
-    static Keyword fromString(const std::string& str);
+    /**
+     * @brief Converts a string to a Keyword.
+     *
+     * @param lexeme
+     * @return Keyword
+     */
+    static Keyword from(std::string_view lexeme);
+
+    /**
+     * @brief Checks if a keyword is a control flow keyword.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
     static bool isControlFlow(Keyword kw);
+
+    /**
+     * @brief Checks if a keyword is a storage specifier.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
     static bool isStorageSpecifier(Keyword kw);
+
+    /**
+     * @brief Checks if a keyword is a function specifier.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
     static bool isFunctionSpecifier(Keyword kw);
+
+    /**
+     * @brief Checks if a keyword is a memory management keyword.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
     static bool isMemoryManagement(Keyword kw);
+
+    /**
+     * @brief Checks if a keyword is a type specifier.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
     static bool isTypeSpecifier(Keyword kw);
   };
 

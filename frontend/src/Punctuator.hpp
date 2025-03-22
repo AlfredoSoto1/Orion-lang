@@ -35,5 +35,6 @@ namespace compiler {
     LINE_COMMENT,    // //
     LBLOCK_COMMENT,  // /*
     RBLOCK_COMMENT,  // */
+    UNKNOWN,
   };
 }  // namespace compiler

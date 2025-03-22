@@ -25,6 +25,12 @@ namespace compiler {
     STRING,
   };
 
+  struct EndOfFile {
+    uint64_t line;
+    uint64_t column;
+    std::string path;
+  };
+
   using LiteralValue = std::variant<char,    // Single Byte character
                                     double,  // Double precision floating point
                                     uint64_t,      // Unsigned 64-bit integer
@@ -35,12 +41,6 @@ namespace compiler {
     LiteralType type;
     std::variant<LiteralValue> value;
   };
-
-  using TokenValue = std::variant<Keyword,     // Keyword
-                                  Literal,     // Literal
-                                  Identifier,  // Identifier
-                                  Punctuator,  // Punctuator
-                                  Operator>;   // Operator
 
   enum class TokenType {
     FIRST,
@@ -53,6 +53,14 @@ namespace compiler {
     ENDOF,
     UNKNOWN,
   };
+
+  using TokenValue = std::variant<Keyword,     // Keyword
+                                  Literal,     // Literal
+                                  Identifier,  // Identifier
+                                  Punctuator,  // Punctuator
+                                  Operator,    // Operator
+                                  EndOfFile,   // End of file
+                                  uint8_t>;    // Unknown error code
 
   /**
    * @brief Represents a token in the source code.
@@ -67,6 +75,22 @@ namespace compiler {
     Token* token;
     size_t line;
     size_t column;
+  };
+
+  class TokenStream {
+  public:
+    TokenStream(uint8_t buffer_size);
+
+    const Token& next();
+    const Token& current() const;
+
+    const Token& peek() const;
+    const Token& peekNext() const;
+
+    bool hasNext() const;
+
+  private:
+    uint8_t buffer_size;
   };
 
 }  // namespace compiler
