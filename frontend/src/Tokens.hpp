@@ -18,6 +18,12 @@ namespace compiler {
     std::string name;
   };
 
+  struct EndOfFile {
+    uint64_t line;
+    uint64_t column;
+    std::string path;
+  };
+
   enum class LiteralType {
     INTEGER,
     FLOAT,
@@ -25,21 +31,13 @@ namespace compiler {
     STRING,
   };
 
-  struct EndOfFile {
-    uint64_t line;
-    uint64_t column;
-    std::string path;
-  };
-
-  using LiteralValue = std::variant<char,    // Single Byte character
-                                    double,  // Double precision floating point
-                                    uint64_t,      // Unsigned 64-bit integer
-                                    int64_t,       // Signed 64-bit integer
-                                    std::string>;  // String
-
   struct Literal {
     LiteralType type;
-    std::variant<LiteralValue> value;
+    std::variant<char,         // Single Byte character
+                 double,       // Double precision floating point
+                 uint64_t,     // Unsigned 64-bit integer
+                 std::string>  // String
+        value;
   };
 
   enum class TokenType {

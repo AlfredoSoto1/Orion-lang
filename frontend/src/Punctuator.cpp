@@ -2,7 +2,7 @@
 
 namespace compiler {
 
-  Punctuator PunctuatorHandler::fromString(const std::string& str) {
+  Punctuator PunctuatorHandler::from(std::string_view str) {
     switch (str[0]) {
       case '@':
         return Punctuator::AT;

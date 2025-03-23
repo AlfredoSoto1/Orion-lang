@@ -4,62 +4,6 @@
 
 namespace compiler {
 
-  class KeywordHandler {
-  public:
-    /**
-     * @brief Converts a string to a Keyword.
-     *
-     * @param lexeme
-     * @return Keyword
-     */
-    static Keyword from(std::string_view lexeme);
-
-    /**
-     * @brief Checks if a keyword is a control flow keyword.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isControlFlow(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a storage specifier.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isStorageSpecifier(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a function specifier.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isFunctionSpecifier(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a memory management keyword.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isMemoryManagement(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a type specifier.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isTypeSpecifier(Keyword kw);
-  };
-
   enum class Keyword {
     // Control flow & loops
     IF,
@@ -145,23 +89,15 @@ namespace compiler {
     VAL,
     VAR,
     LET,
-    CONSTEXPR,
-    CONSTINIT,
     CONSTCAST,
     DYNAMICCAST,
     STATICCAST,
     REINTERPRETCAST,
     TYPECAST,
-    TYPEID,
-    DECLTYPE,
-    SIZEOF,
-    ALIGNOF,
-    NOEXCEPT,
     THROW,
     TRY,
     CATCH,
     FINALLY,
-    THROW,
     VOID,
     BOOL,
     CHAR,
@@ -176,30 +112,67 @@ namespace compiler {
     SHORT,
     UNSIGNED,
     SIGNED,
-    CONST,
-    VOLATILE,
-    MUTABLE,
-    EXPLICIT,
-    IMPLICIT,
     PUBLIC,
     PRIVATE,
     PROTECTED,
-    FRIEND,
-    STATIC,
-    VIRTUAL,
-    OVERRIDE,
-    FINAL,
     ABSTRACT,
-    OPERATOR,
-    USING,
-    NAMESPACE,
-    TYPEDEF,
-    AUTO,
-    INLINE,
-    NOINLINE,
-    NORETURN,
-    NOEXCEPT,
     UNDEFINED,
+  };
+
+  class KeywordHandler {
+  public:
+    /**
+     * @brief Converts a string to a Keyword.
+     *
+     * @param lexeme
+     * @return Keyword
+     */
+    static Keyword from(std::string_view lexeme);
+
+    /**
+     * @brief Checks if a keyword is a control flow keyword.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
+    static bool isControlFlow(Keyword kw);
+
+    /**
+     * @brief Checks if a keyword is a storage specifier.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
+    static bool isStorageSpecifier(Keyword kw);
+
+    /**
+     * @brief Checks if a keyword is a function specifier.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
+    static bool isFunctionSpecifier(Keyword kw);
+
+    /**
+     * @brief Checks if a keyword is a memory management keyword.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
+    static bool isMemoryManagement(Keyword kw);
+
+    /**
+     * @brief Checks if a keyword is a type specifier.
+     *
+     * @param kw
+     * @return true
+     * @return false
+     */
+    static bool isTypeSpecifier(Keyword kw);
   };
 
 }  // namespace compiler

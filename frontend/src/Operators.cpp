@@ -2,7 +2,7 @@
 
 namespace compiler {
 
-  Operator OperatorHandler::fromString(const std::string& str) {
+  Operator OperatorHandler::from(std::string_view str) {
     if (str == "+") return Operator::ADD;
     if (str == "-") return Operator::SUB;
     if (str == "*") return Operator::MUL;
@@ -36,12 +36,12 @@ namespace compiler {
     if (str == "?:") return Operator::TERNARY;
   }
 
-  bool OperatorHandler::isUnary(Operator op) {}
-  bool OperatorHandler::isBinary(Operator op) {}
-  bool OperatorHandler::isTernary(Operator op) {}
-  bool OperatorHandler::isAssignment(Operator op) {}
-  bool OperatorHandler::isLogical(Operator op) {}
-  bool OperatorHandler::isBitwise(Operator op) {}
-  bool OperatorHandler::isComparison(Operator op) {}
-  bool OperatorHandler::isIncrementDecrement(Operator op) {}
+  bool OperatorHandler::isUnary(Operator op) { return false; }
+  bool OperatorHandler::isBinary(Operator op) { return false; }
+  bool OperatorHandler::isTernary(Operator op) { return false; }
+  bool OperatorHandler::isAssignment(Operator op) { return false; }
+  bool OperatorHandler::isLogical(Operator op) { return false; }
+  bool OperatorHandler::isBitwise(Operator op) { return false; }
+  bool OperatorHandler::isComparison(Operator op) { return false; }
+  bool OperatorHandler::isIncrementDecrement(Operator op) { return false; }
 }  // namespace compiler

@@ -4,17 +4,6 @@
 
 namespace compiler {
 
-  class PunctuatorHandler {
-  public:
-    /**
-     * @brief Converts a string to a Punctuator.
-     *
-     * @param str
-     * @return Punctuator
-     */
-    static Punctuator fromString(const std::string& str);
-  };
-
   enum class Punctuator {
     AT,              // @
     DOT,             // .
@@ -36,5 +25,16 @@ namespace compiler {
     LBLOCK_COMMENT,  // /*
     RBLOCK_COMMENT,  // */
     UNKNOWN,
+  };
+
+  class PunctuatorHandler {
+  public:
+    /**
+     * @brief Converts a string to a Punctuator.
+     *
+     * @param str
+     * @return Punctuator
+     */
+    static Punctuator from(std::string_view str);
   };
 }  // namespace compiler

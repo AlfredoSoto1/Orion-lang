@@ -1,152 +1,138 @@
-#include <cctype>
 #include <iostream>
-#include <unordered_set>
+#include <string>
+#include <variant>
 #include <vector>
 
-enum class TokenType {
-  FIRST,
-  KEYWORD,
-  IDENTIFIER,
-  NUMBER,
-  OPERATOR,
-  SYMBOL,
-  STRING,
-  COMMENT,
-  UNKNOWN,
-  ENDOF,
-};
+#include "Lexer.hpp"
 
-struct Token {
-  TokenType type;
-  std::string value;
-};
+using namespace compiler;
 
-class LexerError {};
+void testLexer(const std::string& input, const std::string& testName) {
+  Lexer lexer(input);
+  std::cout << "Testing input: \"" << input << "\" (" << testName << ")\n";
 
-class Lexer {
-private:
-  std::string path;  // Defines the path of where is working
-  std::string source;
-  size_t pos = 0;   // Horizontal line position
-  size_t line = 0;  // Vertical line position
+  while (true) {
+    auto result = lexer.advance();
 
-  std::unordered_set<std::string> keywords = {
-      "int",   "float",  "double", "char",  "if",     "else",   "for",
-      "while", "return", "void",   "class", "struct", "public", "private"};
+    if (result) {
+      Token token = *result;
 
-  bool isOperator(char c) {
-    return std::string("+-*/%=!<>|&^").find(c) != std::string::npos;
-  }
+      switch (token.type) {
+        case TokenType::KEYWORD:
+          std::cout << "Token: Type=" << static_cast<int>(token.type)
+                    << " - Keyword\n";
+          break;
 
-  bool isSymbol(char c) {
-    return std::string("(){}[],;").find(c) != std::string::npos;
-  }
+        case TokenType::IDENTIFIER:
+          std::cout << "Token: Type=" << static_cast<int>(token.type)
+                    << " - Identifier: "
+                    << std::get<Identifier>(token.value.value()).name << "\n";
+          break;
 
-  char peek() { return (pos < source.size()) ? source[pos] : '\0'; }
+        case TokenType::LITERAL: {
+          std::cout << "Token: Type=" << static_cast<int>(token.type)
+                    << " - Numeric Literal: ";
 
-  char advance() { return (pos < source.size()) ? source[pos++] : '\0'; }
+          Literal lt = std::get<Literal>(token.value.value());
+          switch (lt.type) {
+            case LiteralType::INTEGER:
+              std::cout << std::get<uint64_t>(lt.value) << "\n";
+              break;
+            case LiteralType::FLOAT:
+              std::cout << std::get<double>(lt.value) << "\n";
+              break;
+            case LiteralType::CHAR:
+              std::cout << std::get<char>(lt.value) << "\n";
+              break;
+            case LiteralType::STRING:
+              std::cout << std::get<std::string>(lt.value) << "\n";
+              break;
+            default:
+              std::cerr << "Unknown literal type\n";
+          }
+        } break;
 
-  void skipWhitespace() {
-    while (isspace(peek())) advance();
-  }
+        case TokenType::PUNCTUATOR:
+          std::cout << "Token: Type=" << static_cast<int>(token.type)
+                    << " - Special Punctuation: "
+                    << (int)std::get<Punctuator>(token.value.value()) << "\n";
+          break;
 
-  Token makeIdentifier() {
-    std::string value;
-    while (isalnum(peek()) || peek() == '_') {
-      value += advance();
-    }
-    return {keywords.count(value) ? TokenType::KEYWORD : TokenType::IDENTIFIER,
-            value};
-  }
+        case TokenType::OPERATOR:
+          std::cout << "Token: Type=" << static_cast<int>(token.type)
+                    << " - Special Punctuation: "
+                    << (int)std::get<Punctuator>(token.value.value()) << "\n";
+          break;
 
-  Token makeNumber() {
-    std::string value;
-    while (isdigit(peek())) {
-      value += advance();
-    }
-    return {TokenType::NUMBER, value};
-  }
+        case TokenType::COMMENT:
+          std::cout << "Token: Type=" << static_cast<int>(token.type)
+                    << " - Special Punctuation: " << "\n";
+          break;
 
-  Token makeOperator() {
-    std::string value;
-    value += advance();
-    if (isOperator(peek()))
-      value += advance();  // Handle two-character operators like '==', '&&'
-    return {TokenType::OPERATOR, value};
-  }
+        case TokenType::ENDOF:
+          std::cout << "Token: Type=" << static_cast<int>(token.type)
+                    << " - End of File\n";
+          return;
 
-  Token makeString() {
-    std::string value;
-    advance();  // Skip opening quote
-    while (peek() != '"' && peek() != '\0') {
-      value += advance();
-    }
-    advance();  // Skip closing quote
-    return {TokenType::STRING, value};
-  }
+        default:
+          std::cerr << "Unknown token type.\n";
 
-  Token makeComment() {
-    std::string value;
-    advance();  // Skip first '/'
-    if (peek() == '/') {
-      while (peek() != '\n' && peek() != '\0') {
-        value += advance();
+          // End of the token stream
+          if (token.type == TokenType::ENDOF) {
+            return;
+          }
       }
-      return {TokenType::COMMENT, value};
+    } else {
+      LexerError error = result.error();
+      std::cerr << "Lexer Error at line " << error.line << ", pos " << error.pos
+                << ": " << error.message << "\n";
+      break;
     }
-    return {TokenType::UNKNOWN, "/"};
   }
-
-public:
-  Lexer(const std::string& src) : source(src) {}
-
-  std::vector<Token> tokenize() {
-    std::vector<Token> tokens;
-
-    while (pos < source.size()) {
-      skipWhitespace();
-      char c = peek();
-
-      if (isalpha(c) || c == '_') {
-        tokens.push_back(makeIdentifier());
-      } else if (isdigit(c)) {
-        tokens.push_back(makeNumber());
-      } else if (isOperator(c)) {
-        tokens.push_back(makeOperator());
-      } else if (isSymbol(c)) {
-        tokens.push_back({TokenType::SYMBOL, std::string(1, advance())});
-      } else if (c == '"') {
-        tokens.push_back(makeString());
-      } else if (c == '/') {
-        tokens.push_back(makeComment());
-      } else {
-        tokens.push_back({TokenType::UNKNOWN, std::string(1, advance())});
-      }
-    }
-
-    tokens.push_back({TokenType::ENDOF, ""});
-    return tokens;
-  }
-};
+  std::cout << "--------------------------------\n";
+}
 
 int main() {
-  std::string code = R"(
-        int main() {
-            int x = 10;
-            if (x > 5) {
-                x = x + 1;
-            }
-            return 0;
-        }
-    )";
+  // Test Identifiers and Keywords
+  testLexer("int main return void function identifier123",
+            "Identifiers and Keywords");
 
-  Lexer lexer(code);
-  std::vector<Token> tokens = lexer.tokenize();
+  // Test Numeric Literals
+  testLexer("123 456.78 0xABC 0777", "Numeric Literals");
 
-  for (const auto& token : tokens) {
-    std::cout << "Token: " << static_cast<int>(token.type) << " -> "
-              << token.value << "\n";
-  }
+  // // Test String Literals
+  // testLexer(
+  //     "\"hello\" \"world\" \"12345\" \"a very long string that exceeds "
+  //     "normal "
+  //     "bounds for testing purposes!\"",
+  //     "String Literals");
+
+  // // Test Special Punctuation
+  // testLexer("+ - * / = == != && ||", "Special Punctuation");
+
+  // // Test Unterminated String Error
+  // testLexer("\"hello world", "Unterminated String Literal");
+
+  // // Test Invalid Numeric Literal Length (Too long)
+  // testLexer(std::string(300, '9'), "Invalid Numeric Literal Length");
+
+  // // Test Unknown Character Error
+  // testLexer("@", "Unknown Character Error");
+
+  // // Test Edge Case: Empty String (Nothing to parse)
+  // testLexer("", "Empty String");
+
+  // // Test Edge Case: Single Character (just an identifier)
+  // testLexer("a", "Single Character Identifier");
+
+  // // Test Edge Case: Reserved Keyword as Identifier (e.g., 'return')
+  // testLexer("return", "Keyword as Identifier");
+
+  // // Test Edge Case: Just a number with no space
+  // testLexer("123456789012345", "Large Numeric Literal");
+
+  // // Test Edge Case: Invalid characters
+  // testLexer("a@b$c", "Invalid Characters");
 
   return 0;
 }

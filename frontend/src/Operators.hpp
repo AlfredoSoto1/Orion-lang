@@ -4,26 +4,6 @@
 
 namespace compiler {
 
-  class OperatorHandler {
-  public:
-    /**
-     * @brief Converts a string to an Operator.
-     *
-     * @param str
-     * @return * Operator
-     */
-    static Operator fromString(const std::string& str);
-
-    static bool isUnary(Operator op);
-    static bool isBinary(Operator op);
-    static bool isTernary(Operator op);
-    static bool isAssignment(Operator op);
-    static bool isLogical(Operator op);
-    static bool isBitwise(Operator op);
-    static bool isComparison(Operator op);
-    static bool isIncrementDecrement(Operator op);
-  };
-
   enum class Operator {
     // Arithmetic operators
     ADD,  // +
@@ -75,5 +55,25 @@ namespace compiler {
 
     // Ternary operator
     TERNARY,  // ?
+  };
+
+  class OperatorHandler {
+  public:
+    /**
+     * @brief Converts a string to an Operator.
+     *
+     * @param str
+     * @return * Operator
+     */
+    static Operator from(std::string_view str);
+
+    static bool isUnary(Operator op);
+    static bool isBinary(Operator op);
+    static bool isTernary(Operator op);
+    static bool isAssignment(Operator op);
+    static bool isLogical(Operator op);
+    static bool isBitwise(Operator op);
+    static bool isComparison(Operator op);
+    static bool isIncrementDecrement(Operator op);
   };
 }  // namespace compiler
