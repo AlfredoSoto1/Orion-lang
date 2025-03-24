@@ -31,7 +31,6 @@ namespace compiler {
     Lexer(std::string_view src);
 
     TokenStream stream();
-
     LexerResult advance();
 
   private:
@@ -44,10 +43,10 @@ namespace compiler {
     using IParseResult = std::expected<uint64_t, LexerError>;
 
   private:
-    LexerResult makeIdentifierOrKeyword();
-    LexerResult makeStringLiteral();
-    LexerResult makeCharLiteral();
-    LexerResult makeNumericLiteral();
+    LexerResult makeSymbol();
+    LexerResult makeNumberL();
+    LexerResult makeStringL();
+    LexerResult makeCharacterL();
     LexerResult makeSpecialPunc();
     LexerResult makePunctuatorComment();
 
@@ -66,6 +65,7 @@ namespace compiler {
     IParseResult toInt(std::string_view numeric_literal, uint8_t base) const;
     DParseResult toDouble(std::string_view double_literal) const;
 
+  private:
     // Move the current position forward if the current character
     // meets the condition and it hasn't reached the end of file.
     template <typename Condition>

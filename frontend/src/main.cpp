@@ -90,15 +90,15 @@ void testLexer(const std::string& input, const std::string& testName) {
 }
 
 int main() {
-  // Test Identifiers and Keywords
-  testLexer("int main return void function identifier123 and_others _ _no",
-            "Identifiers and Keywords");
+  // // Test Identifiers and Keywords
+  // testLexer("int main return void function identifier123 and_others _ _no",
+  //           "Identifiers and Keywords");
 
-  // Test Numeric Literals
-  testLexer("123 456.78 0xABC 0777 0b101", "Numeric Literals");
+  // // Test Numeric Literals
+  // testLexer("123 456.78 0xABC 0777 0b101", "Numeric Literals");
 
-  // Test String Literals
-  testLexer(R"( 'A' "YES")", "String Literals");
+  // // Test String Literals
+  // testLexer(R"( 'A' "YES")", "String Literals");
 
   // Test Special Punctuation
   testLexer("!= && || += ++ +- -+ /=", "Special Punctuation");

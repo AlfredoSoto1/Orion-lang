@@ -29,13 +29,13 @@ namespace compiler {
 
     // Check if the current character meets the criteria for a token
     if (isalpha(c)) {
-      return makeIdentifierOrKeyword();
+      return makeSymbol();
     } else if (isdigit(c)) {
-      return makeNumericLiteral();
+      return makeNumberL();
     } else if (c == '"') {
-      return makeStringLiteral();
+      return makeStringL();
     } else if (c == '\'') {
-      return makeCharLiteral();
+      return makeCharacterL();
     } else if (isSpecialPunc(c)) {
       return makeSpecialPunc();
     } else {
@@ -44,10 +44,10 @@ namespace compiler {
     }
   }
 
-  Lexer::LexerResult Lexer::makeIdentifierOrKeyword() {
+  Lexer::LexerResult Lexer::makeSymbol() {
     uint64_t lexeme_start = pos;
     uint64_t lexeme_end =
-        peekWhile([](char c_peek) { return isalnum(c_peek) || c_peek == '_'; });
+        peekWhile([](char c) { return isalnum(c) || c == '_'; });
 
     if (lexeme_end - lexeme_start > 256) {
       // Handle lexer error when identifier exceeds length
@@ -72,69 +72,7 @@ namespace compiler {
     return Token{TokenType::KEYWORD, kw};
   }
 
-  Lexer::LexerResult Lexer::makeStringLiteral() {
-    next();  // consume starting "
-
-    std::string string_literal;
-    bool balanced = false;
-    bool in_escape_mode = false;
-
-    while (peek() != '\0') {
-      char c = next();
-
-      bool escaped = isEscapedChar(c) && in_escape_mode;
-
-      in_escape_mode = !escaped && c == '\\';
-      if (in_escape_mode) {
-        continue;
-      }
-
-      if (escaped) {
-        c = toEscapedChar(c);
-      }
-
-      // If we encounter an unescaped ", we've reached the end
-      if (!escaped && c == '"') {
-        balanced = true;
-        break;
-      }
-
-      string_literal.push_back(c);
-    }
-
-    if (!balanced) {
-      return lexerError(LexerErrorType::UNTERMINATED_STRING,
-                        "Missing closing quote.");
-    }
-
-    return Token{TokenType::LITERAL,
-                 Literal{LiteralType::STRING, string_literal}};
-  }
-
-  Lexer::LexerResult Lexer::makeCharLiteral() {
-    // consume starting '
-    next();
-
-    if (peek() == '\'') {
-      return lexerError(LexerErrorType::UNTERMINATED_STRING,
-                        "Quoted char should contain at least one character.");
-    }
-
-    // consume and cache the char
-    char c = next();
-
-    if (peek() != '\'') {
-      return lexerError(LexerErrorType::UNTERMINATED_STRING,
-                        "Too many characters in char literal.");
-    }
-
-    // consume last '
-    next();
-
-    return Token{TokenType::LITERAL, Literal{LiteralType::CHAR, c}};
-  }
-
-  Lexer::LexerResult Lexer::makeNumericLiteral() {
+  Lexer::LexerResult Lexer::makeNumberL() {
     uint8_t base = 10;
     uint64_t lexeme_start = pos;
 
@@ -189,6 +127,68 @@ namespace compiler {
                  Literal{LiteralType::INTEGER, *num_result}};
   }
 
+  Lexer::LexerResult Lexer::makeStringL() {
+    next();  // consume starting "
+
+    std::string string_literal;
+    bool balanced = false;
+    bool in_escape_mode = false;
+
+    while (peek() != '\0') {
+      char c = next();
+
+      bool escaped = isEscapedChar(c) && in_escape_mode;
+
+      in_escape_mode = !escaped && c == '\\';
+      if (in_escape_mode) {
+        continue;
+      }
+
+      if (escaped) {
+        c = toEscapedChar(c);
+      }
+
+      // If we encounter an unescaped ", we've reached the end
+      if (!escaped && c == '"') {
+        balanced = true;
+        break;
+      }
+
+      string_literal.push_back(c);
+    }
+
+    if (!balanced) {
+      return lexerError(LexerErrorType::UNTERMINATED_STRING,
+                        "Missing closing quote.");
+    }
+
+    return Token{TokenType::LITERAL,
+                 Literal{LiteralType::STRING, string_literal}};
+  }
+
+  Lexer::LexerResult Lexer::makeCharacterL() {
+    // consume starting '
+    next();
+
+    if (peek() == '\'') {
+      return lexerError(LexerErrorType::UNTERMINATED_STRING,
+                        "Quoted char should contain at least one character.");
+    }
+
+    // consume and cache the char
+    char c = next();
+
+    if (peek() != '\'') {
+      return lexerError(LexerErrorType::UNTERMINATED_STRING,
+                        "Too many characters in char literal.");
+    }
+
+    // consume last '
+    next();
+
+    return Token{TokenType::LITERAL, Literal{LiteralType::CHAR, c}};
+  }
+
   Lexer::LexerResult Lexer::makeSpecialPunc() {
     uint64_t punc_start = pos;
     uint64_t punc_end = peekWhile([this](char p) { return isSpecialPunc(p); });
@@ -196,8 +196,7 @@ namespace compiler {
     std::string_view punc_view(source.data() + punc_start,
                                punc_end - punc_start);
 
-    Punctuator punctuator = PunctuatorHandler::from(punc_view);
-    return Token{TokenType::PUNCTUATOR, punctuator};
+    return Token{TokenType::PUNCTUATOR, PunctuatorHandler::from(punc_view)};
   }
 
   char Lexer::next() {
@@ -272,6 +271,7 @@ namespace compiler {
       case '<':
       case '>':
       case '~':
+      case '_':
         return true;
 
       default:
