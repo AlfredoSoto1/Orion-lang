@@ -53,8 +53,14 @@ namespace compiler {
     LTE,  // <=
     GTE,  // >=
 
-    // Ternary operator
-    TERNARY,  // ?
+    // Other operators
+    TERNARY,         // ?
+    LARROW,          // <-
+    RARROW,          // ->
+    REFERENCE,       // &
+    EXPR_REFERENCE,  // &&
+    PTR,             // *
+    PTR_DEREF,       // *
   };
 
   class OperatorHandler {

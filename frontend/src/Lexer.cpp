@@ -34,6 +34,8 @@ namespace compiler {
       return makeNumericLiteral();
     } else if (c == '"') {
       return makeStringLiteral();
+    } else if (c == '\'') {
+      return makeCharLiteral();
     } else if (isSpecialPunc(c)) {
       return makeSpecialPunc();
     } else {
@@ -44,7 +46,8 @@ namespace compiler {
 
   Lexer::LexerResult Lexer::makeIdentifierOrKeyword() {
     uint64_t lexeme_start = pos;
-    uint64_t lexeme_end = peekWhile([](char c_lex) { return isalnum(c_lex); });
+    uint64_t lexeme_end =
+        peekWhile([](char c_peek) { return isalnum(c_peek) || c_peek == '_'; });
 
     if (lexeme_end - lexeme_start > 256) {
       // Handle lexer error when identifier exceeds length
@@ -70,66 +73,131 @@ namespace compiler {
   }
 
   Lexer::LexerResult Lexer::makeStringLiteral() {
-    return Token{TokenType::UNKNOWN, {}};
+    next();  // consume starting "
+
+    std::string string_literal;
+    bool balanced = false;
+    bool in_escape_mode = false;
+
+    while (peek() != '\0') {
+      char c = next();
+
+      bool escaped = isEscapedChar(c) && in_escape_mode;
+
+      in_escape_mode = !escaped && c == '\\';
+      if (in_escape_mode) {
+        continue;
+      }
+
+      if (escaped) {
+        c = toEscapedChar(c);
+      }
+
+      // If we encounter an unescaped ", we've reached the end
+      if (!escaped && c == '"') {
+        balanced = true;
+        break;
+      }
+
+      string_literal.push_back(c);
+    }
+
+    if (!balanced) {
+      return lexerError(LexerErrorType::UNTERMINATED_STRING,
+                        "Missing closing quote.");
+    }
+
+    return Token{TokenType::LITERAL,
+                 Literal{LiteralType::STRING, string_literal}};
+  }
+
+  Lexer::LexerResult Lexer::makeCharLiteral() {
+    // consume starting '
+    next();
+
+    if (peek() == '\'') {
+      return lexerError(LexerErrorType::UNTERMINATED_STRING,
+                        "Quoted char should contain at least one character.");
+    }
+
+    // consume and cache the char
+    char c = next();
+
+    if (peek() != '\'') {
+      return lexerError(LexerErrorType::UNTERMINATED_STRING,
+                        "Too many characters in char literal.");
+    }
+
+    // consume last '
+    next();
+
+    return Token{TokenType::LITERAL, Literal{LiteralType::CHAR, c}};
   }
 
   Lexer::LexerResult Lexer::makeNumericLiteral() {
+    uint8_t base = 10;
     uint64_t lexeme_start = pos;
-    uint64_t lexeme_end = peekWhile([](char c_lex) { return isdigit(c_lex); });
 
-    if (lexeme_end - lexeme_start > 20) {
-      // Handle lexer error when numeric literal exceeds length
-      // Throw lexer error or return an unknown token
-      return lexerError(LexerErrorType::INVALID_NUMERIC_LITERAL_LENGTH,
-                        "Numeric literal exceeds 20 digits as minimum.");
+    // Check for hexadecimal, octal, or binary prefix
+    if (peek() == '0') {
+      char next_char = peekNext();
+      if (next_char == 'x' || next_char == 'X') {
+        // Consume 0x
+        next();
+        next();
+        base = 16;
+        lexeme_start += 2;
+      } else if (next_char == 'b' || next_char == 'B') {
+        // Consume 0b
+        next();
+        next();
+        base = 2;
+        lexeme_start += 2;
+      } else if (isdigit(next_char)) {
+        // Consume 0
+        next();
+        base = 8;
+        lexeme_start += 1;
+      }
     }
+
+    // Capture the numeric part
+    uint64_t lexeme_end = peekWhile(
+        [base](char c) { return base == 16 ? isalnum(c) : isdigit(c); });
 
     std::string_view number_literal(source.data() + lexeme_start,
                                     lexeme_end - lexeme_start);
 
+    // Handle floating-point numbers (only for decimal)
     if (peek() == '.') {
-      // Consume dot if numeric literal is a floating point
-      next();
-
-      // Cache the end of the floating point number
+      next();  // Consume '.'
       uint64_t precision_end =
-          peekWhile([](char c_lex) { return isdigit(c_lex); });
-
+          peekWhile([](char c) { return (bool)isdigit(c); });
       std::string_view double_literal(source.data() + lexeme_start,
                                       precision_end - lexeme_start);
 
-      if (precision_end - lexeme_start > 20) {
-        // Handle lexer error when numeric literal exceeds length
-        // Throw lexer error or return an unknown token
-        return lexerError(
-            LexerErrorType::INVALID_NUMERIC_LITERAL_LENGTH,
-            "Numeric double literal exceeds 20 digits as minimum.");
-      }
-
-      auto num_result = toDouble(number_literal);
-
-      // Pass error up if any
-      if (!num_result) {
-        return std::unexpected(num_result.error());
-      }
-
+      auto num_result = toDouble(double_literal);
+      if (!num_result) return std::unexpected(num_result.error());
       return Token{TokenType::LITERAL,
                    Literal{LiteralType::FLOAT, *num_result}};
     }
 
-    auto num_result = toInt(number_literal);
-
-    // Pass error up if any
-    if (!num_result) {
-      return std::unexpected(num_result.error());
-    }
-
+    // Convert integer based on detected base
+    auto num_result = toInt(number_literal, base);
+    if (!num_result) return std::unexpected(num_result.error());
     return Token{TokenType::LITERAL,
                  Literal{LiteralType::INTEGER, *num_result}};
   }
 
   Lexer::LexerResult Lexer::makeSpecialPunc() {
-    return Token{TokenType::UNKNOWN, {}};
+    uint64_t punc_start = pos;
+    uint64_t punc_end = peekWhile([this](char p) { return isSpecialPunc(p); });
+
+    std::string_view punc_view(source.data() + punc_start,
+                               punc_end - punc_start);
+
+    Punctuator punctuator = PunctuatorHandler::from(punc_view);
+    return Token{TokenType::PUNCTUATOR, punctuator};
   }
 
   char Lexer::next() {
@@ -155,26 +223,12 @@ namespace compiler {
     // Skip all whitespace characters until we reach a non-whitespace
     // character or the end of the source code.
     while (peek() != '\0' && isWhitespace(peek())) {
-      if (peek() == '\n') {
-        line++;
-      }
+      if (peek() == '\n') line++;
       pos++;
     }
   }
 
-  uint64_t Lexer::peekWhile(Condition condition) {
-    // Move the current position forward if the current character
-    // meets the condition and it hasn't reached the end of file.
-    while (condition(peek()) && peek() != '\0') {
-      if (peek() == '\n') {
-        line++;
-      }
-      pos++;
-    }
-    return pos;
-  }
-
-  bool Lexer::isWhitespace(char c) {
+  bool Lexer::isWhitespace(char c) const {
     switch (c) {
       case ' ':   // Space
       case '\t':  // Tab
@@ -188,9 +242,12 @@ namespace compiler {
     }
   }
 
-  bool Lexer::isSpecialPunc(char c) {
+  bool Lexer::isSpecialPunc(char c) const {
     switch (c) {
       // Punctuators
+      case '@':
+      case '#':
+      case '$':
       case '(':
       case ')':
       case '{':
@@ -201,14 +258,11 @@ namespace compiler {
       case ';':
       case ':':
       case '.':
-      case '?':  // As wild card or tenerary
-        return true;
-
-      // Operators
+      case '?':
       case '+':
       case '-':
       case '*':
-      case '/':  // For division and comment
+      case '/':
       case '%':
       case '=':
       case '&':
@@ -217,10 +271,35 @@ namespace compiler {
       case '!':
       case '<':
       case '>':
+      case '~':
         return true;
 
       default:
         return false;
+    }
+  }
+
+  bool Lexer::isEscapedChar(char c) const {
+    return c == 'n' || c == 'r' || c == '"' || c == '\'' || c == '0' ||
+           c == '\\';
+  }
+
+  char Lexer::toEscapedChar(char c) const {
+    switch (c) {
+      case 'n':
+        return '\n';
+      case 'r':
+        return '\r';
+      case '"':
+        return '\"';
+      case '\'':
+        return '\'';
+      case '0':
+        return '\0';
+      case '\\':
+        return '\\';
+      default:
+        return c;
     }
   }
 
@@ -236,52 +315,16 @@ namespace compiler {
     return result;
   }
 
-  Lexer::IParseResult Lexer::toInt(std::string_view numeric_literal) const {
+  Lexer::IParseResult Lexer::toInt(std::string_view numeric_literal,
+                                   uint8_t base) const {
     uint64_t result = 0;
-
-    // Check for hexadecimal (0x or 0X prefix)
-    if (numeric_literal.find("0x") == 0 || numeric_literal.find("0X") == 0) {
-      auto [ptr, ec] = std::from_chars(
-          numeric_literal.data() + 2,
-          numeric_literal.data() + numeric_literal.size(), result, 16);
-      if (ec != std::errc()) {
-        return lexerError(LexerErrorType::PARSING_INTEGER_ERROR,
-                          "Invalid hexadecimal integer literal");
-      }
+    auto [ptr, ec] = std::from_chars(
+        numeric_literal.data(), numeric_literal.data() + numeric_literal.size(),
+        result, base);
+    if (ec != std::errc()) {
+      return lexerError(LexerErrorType::PARSING_INTEGER_ERROR,
+                        "Invalid integer literal");
     }
-    // Check for octal (0 prefix)
-    else if (numeric_literal.find("0") == 0 && numeric_literal.size() > 1 &&
-             numeric_literal[1] != 'x' && numeric_literal[1] != 'X') {
-      auto [ptr, ec] = std::from_chars(
-          numeric_literal.data() + 1,
-          numeric_literal.data() + numeric_literal.size(), result, 8);
-      if (ec != std::errc()) {
-        return lexerError(LexerErrorType::PARSING_INTEGER_ERROR,
-                          "Invalid octal integer literal");
-      }
-    }
-    // Check for binary (0b or 0B prefix)
-    else if (numeric_literal.find("0b") == 0 ||
-             numeric_literal.find("0B") == 0) {
-      auto [ptr, ec] = std::from_chars(
-          numeric_literal.data() + 2,
-          numeric_literal.data() + numeric_literal.size(), result, 2);
-      if (ec != std::errc()) {
-        return lexerError(LexerErrorType::PARSING_INTEGER_ERROR,
-                          "Invalid binary integer literal");
-      }
-    }
-    // Default to decimal parsing
-    else {
-      auto [ptr, ec] = std::from_chars(
-          numeric_literal.data(),
-          numeric_literal.data() + numeric_literal.size(), result, 10);
-      if (ec != std::errc()) {
-        return lexerError(LexerErrorType::PARSING_INTEGER_ERROR,
-                          "Invalid decimal integer literal");
-      }
-    }
-
     return result;
   }
 }  // namespace compiler

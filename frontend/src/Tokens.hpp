@@ -4,7 +4,6 @@
 #include <variant>
 
 #include "Keyword.hpp"
-#include "Operators.hpp"
 #include "Punctuator.hpp"
 
 namespace compiler {
@@ -46,7 +45,6 @@ namespace compiler {
     LITERAL,
     IDENTIFIER,
     PUNCTUATOR,
-    OPERATOR,
     COMMENT,
     ENDOF,
     UNKNOWN,
@@ -56,7 +54,6 @@ namespace compiler {
                                   Literal,     // Literal
                                   Identifier,  // Identifier
                                   Punctuator,  // Punctuator
-                                  Operator,    // Operator
                                   EndOfFile,   // End of file
                                   uint8_t>;    // Unknown error code
 

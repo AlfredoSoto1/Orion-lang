@@ -20,7 +20,10 @@ void testLexer(const std::string& input, const std::string& testName) {
       switch (token.type) {
         case TokenType::KEYWORD:
           std::cout << "Token: Type=" << static_cast<int>(token.type)
-                    << " - Keyword\n";
+                    << " - Keyword: "
+                    << KeywordHandler::from(
+                           std::get<Keyword>(token.value.value()))
+                    << "\n";
           break;
 
         case TokenType::IDENTIFIER:
@@ -58,12 +61,6 @@ void testLexer(const std::string& input, const std::string& testName) {
                     << (int)std::get<Punctuator>(token.value.value()) << "\n";
           break;
 
-        case TokenType::OPERATOR:
-          std::cout << "Token: Type=" << static_cast<int>(token.type)
-                    << " - Special Punctuation: "
-                    << (int)std::get<Punctuator>(token.value.value()) << "\n";
-          break;
-
         case TokenType::COMMENT:
           std::cout << "Token: Type=" << static_cast<int>(token.type)
                     << " - Special Punctuation: " << "\n";
@@ -94,21 +91,17 @@ void testLexer(const std::string& input, const std::string& testName) {
 
 int main() {
   // Test Identifiers and Keywords
-  testLexer("int main return void function identifier123",
+  testLexer("int main return void function identifier123 and_others _ _no",
             "Identifiers and Keywords");
 
   // Test Numeric Literals
-  testLexer("123 456.78 0xABC 0777", "Numeric Literals");
+  testLexer("123 456.78 0xABC 0777 0b101", "Numeric Literals");
 
-  // // Test String Literals
-  // testLexer(
-  //     "\"hello\" \"world\" \"12345\" \"a very long string that exceeds "
-  //     "normal "
-  //     "bounds for testing purposes!\"",
-  //     "String Literals");
+  // Test String Literals
+  testLexer(R"( 'A' "YES")", "String Literals");
 
-  // // Test Special Punctuation
-  // testLexer("+ - * / = == != && ||", "Special Punctuation");
+  // Test Special Punctuation
+  testLexer("!= && || += ++ +- -+ /=", "Special Punctuation");
 
   // // Test Unterminated String Error
   // testLexer("\"hello world", "Unterminated String Literal");

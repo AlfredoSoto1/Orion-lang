@@ -12,7 +12,6 @@ namespace compiler {
     PARSING_DOUBLE_ERROR,
     PARSING_INTEGER_ERROR,
     INVALID_IDENTIFIER_LENGTH,
-    INVALID_NUMERIC_LITERAL_LENGTH,
     UNKNOWN_CHARACTER,
     UNTERMINATED_STRING,
   };
@@ -41,13 +40,13 @@ namespace compiler {
     uint64_t unique_hash = 0;
     std::string_view source;
 
-    using Condition = int (*)(char);
     using DParseResult = std::expected<double, LexerError>;
     using IParseResult = std::expected<uint64_t, LexerError>;
 
   private:
     LexerResult makeIdentifierOrKeyword();
     LexerResult makeStringLiteral();
+    LexerResult makeCharLiteral();
     LexerResult makeNumericLiteral();
     LexerResult makeSpecialPunc();
     LexerResult makePunctuatorComment();
@@ -56,16 +55,27 @@ namespace compiler {
     char next();
     char peek() const;
     char peekNext() const;
+    void skipWhitespace();
 
   private:
-    void skipWhitespace();
-    uint64_t peekWhile(Condition condition);
+    bool isWhitespace(char c) const;
+    bool isSpecialPunc(char c) const;
+    bool isEscapedChar(char c) const;
 
-    bool isWhitespace(char c);
-    bool isSpecialPunc(char c);
-
-    IParseResult toInt(std::string_view numeric_literal) const;
+    char toEscapedChar(char c) const;
+    IParseResult toInt(std::string_view numeric_literal, uint8_t base) const;
     DParseResult toDouble(std::string_view double_literal) const;
+
+    // Move the current position forward if the current character
+    // meets the condition and it hasn't reached the end of file.
+    template <typename Condition>
+    uint64_t peekWhile(Condition&& condition) {
+      while (condition(peek()) && peek() != '\0') {
+        if (peek() == '\n') line++;
+        pos++;
+      }
+      return pos;
+    }
   };
 
 }  // namespace compiler

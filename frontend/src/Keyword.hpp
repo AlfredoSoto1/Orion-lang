@@ -130,6 +130,14 @@ namespace compiler {
     static Keyword from(std::string_view lexeme);
 
     /**
+     * @brief Converts a keyword to a string.
+     *
+     * @param keyword
+     * @return str
+     */
+    static std::string_view from(Keyword kw);
+
+    /**
      * @brief Checks if a keyword is a control flow keyword.
      *
      * @param kw
