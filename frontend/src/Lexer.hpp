@@ -4,24 +4,10 @@
 #include <string>
 #include <vector>
 
+#include "LexerError.hpp"
 #include "Tokens.hpp"
 
 namespace compiler {
-
-  enum class LexerErrorType {
-    PARSING_DOUBLE_ERROR,
-    PARSING_INTEGER_ERROR,
-    INVALID_IDENTIFIER_LENGTH,
-    UNKNOWN_CHARACTER,
-    UNTERMINATED_STRING,
-  };
-
-  struct LexerError {
-    uint64_t line;
-    uint64_t pos;
-    LexerErrorType type;
-    std::string message;
-  };
 
   class Lexer {
   public:
@@ -44,11 +30,10 @@ namespace compiler {
 
   private:
     LexerResult makeSymbol();
-    LexerResult makeNumberL();
-    LexerResult makeStringL();
-    LexerResult makeCharacterL();
-    LexerResult makeSpecialPunc();
-    LexerResult makePunctuatorComment();
+    LexerResult makeCharLiteral();
+    LexerResult makeNumberLiteral();
+    LexerResult makeStringLiteral();
+    LexerResult makePunctuator();
 
   private:
     char next();
@@ -58,7 +43,7 @@ namespace compiler {
 
   private:
     bool isWhitespace(char c) const;
-    bool isSpecialPunc(char c) const;
+    bool isPunctuator(char c) const;
     bool isEscapedChar(char c) const;
 
     char toEscapedChar(char c) const;

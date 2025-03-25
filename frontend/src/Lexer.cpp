@@ -28,16 +28,16 @@ namespace compiler {
     char c = peek();
 
     // Check if the current character meets the criteria for a token
-    if (isalpha(c)) {
+    if (std::isalpha(c)) {
       return makeSymbol();
-    } else if (isdigit(c)) {
-      return makeNumberL();
+    } else if (std::isdigit(c)) {
+      return makeNumberLiteral();
     } else if (c == '"') {
-      return makeStringL();
+      return makeStringLiteral();
     } else if (c == '\'') {
-      return makeCharacterL();
-    } else if (isSpecialPunc(c)) {
-      return makeSpecialPunc();
+      return makeCharLiteral();
+    } else if (isPunctuator(c)) {
+      return makePunctuator();
     } else {
       return lexerError(LexerErrorType::UNKNOWN_CHARACTER,
                         "Unknown character while scanning");
@@ -72,7 +72,7 @@ namespace compiler {
     return Token{TokenType::KEYWORD, kw};
   }
 
-  Lexer::LexerResult Lexer::makeNumberL() {
+  Lexer::LexerResult Lexer::makeNumberLiteral() {
     uint8_t base = 10;
     uint64_t lexeme_start = pos;
 
@@ -107,7 +107,7 @@ namespace compiler {
                                     lexeme_end - lexeme_start);
 
     // Handle floating-point numbers (only for decimal)
-    if (peek() == '.') {
+    if (base == 10 && peek() == '.') {
       next();  // Consume '.'
       uint64_t precision_end =
           peekWhile([](char c) { return (bool)isdigit(c); });
@@ -127,7 +127,7 @@ namespace compiler {
                  Literal{LiteralType::INTEGER, *num_result}};
   }
 
-  Lexer::LexerResult Lexer::makeStringL() {
+  Lexer::LexerResult Lexer::makeStringLiteral() {
     next();  // consume starting "
 
     std::string string_literal;
@@ -166,7 +166,7 @@ namespace compiler {
                  Literal{LiteralType::STRING, string_literal}};
   }
 
-  Lexer::LexerResult Lexer::makeCharacterL() {
+  Lexer::LexerResult Lexer::makeCharLiteral() {
     // consume starting '
     next();
 
@@ -189,12 +189,45 @@ namespace compiler {
     return Token{TokenType::LITERAL, Literal{LiteralType::CHAR, c}};
   }
 
-  Lexer::LexerResult Lexer::makeSpecialPunc() {
+  Lexer::LexerResult Lexer::makePunctuator() {
     uint64_t punc_start = pos;
-    uint64_t punc_end = peekWhile([this](char p) { return isSpecialPunc(p); });
+    uint64_t punc_end = peekWhile([this](char p) { return isPunctuator(p); });
 
     std::string_view punc_view(source.data() + punc_start,
                                punc_end - punc_start);
+
+    // PunctuatorHandler::from
+
+    // let single_punctuator =
+    //     Punctuator::from_str(&c.to_string())
+    //         .map_err(| _ |
+    //                  LexerError::InvalidToken(
+    //                      c, None, self.get_current_location().into()))
+    //     ? ;
+
+    // let double_punctuator = self.iter.peek_next_char().and_then(
+    //     | (_, next_char) |
+    //     Punctuator::from_str(&format !("{c}{next_char}")).ok());
+
+    // // consume next char only if double char punctuator
+    // // since peek does not consume
+    // if double_punctuator
+    //   .is_some() { self.iter.advance(); }
+
+    // // double punctuator, if not single punctuator
+    // let punctuator = double_punctuator.unwrap_or(single_punctuator);
+
+    // let comment = match punctuator{
+    //     // Handle comment
+    //     Punctuator::LParenComment = > Some(self.multi_line_comment()),
+    //     Punctuator::SingleLineComment = > Some(self.singe_line_comment()),
+    //     _ = > None,
+    // };
+
+    // if let
+    //   Some(comment) = comment { return Ok(Token::Comment(comment)); }
+
+    // Ok(Token::Punctuator(punctuator))
 
     return Token{TokenType::PUNCTUATOR, PunctuatorHandler::from(punc_view)};
   }
@@ -241,9 +274,8 @@ namespace compiler {
     }
   }
 
-  bool Lexer::isSpecialPunc(char c) const {
+  bool Lexer::isPunctuator(char c) const {
     switch (c) {
-      // Punctuators
       case '@':
       case '#':
       case '$':

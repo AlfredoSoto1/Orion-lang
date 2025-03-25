@@ -65,11 +65,7 @@ namespace compiler {
 
     // If the lexeme matches any keyword, return its enum equivalent
     auto it = keyword_map.find(lexeme);
-    if (it != keyword_map.end()) {
-      return it->second;
-    }
-
-    return Keyword::UNDEFINED;
+    return (it != keyword_map.end()) ? it->second : Keyword::UNDEFINED;
   }
 
   std::string_view KeywordHandler::from(Keyword kw) {

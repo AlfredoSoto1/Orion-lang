@@ -1,121 +1,68 @@
 #include "Punctuator.hpp"
 
+#include <unordered_map>
+
 namespace compiler {
 
   Punctuator PunctuatorHandler::from(std::string_view str) {
-    switch (str[0]) {
-      case '@':
-        return Punctuator::AT;
-      case '#':
-        return Punctuator::HASH;
-      case '$':
-        return Punctuator::DOLLAR;
-      case '.':
-        return Punctuator::DOT;
-      case ',':
-        return Punctuator::COMMA;
-      case ':':
-        return Punctuator::COLON;
-      case ';':
-        return Punctuator::SEMI_COLON;
-      case '{':
-        return Punctuator::LBRACE;
-      case '}':
-        return Punctuator::RBRACE;
-      case '(':
-        return Punctuator::LPAREN;
-      case ')':
-        return Punctuator::RPAREN;
-      case '[':
-        return Punctuator::LBRACKET;
-      case ']':
-        return Punctuator::RBRACKET;
-      case '_':
-        return Punctuator::UNDER_SCORE;
-      case '+':
-        return Punctuator::PLUS;
-      case '-':
-        return Punctuator::DASH;
-      case '*':
-        return Punctuator::STAR;
-      case '/':
-        return Punctuator::SLASH;
-      case '%':
-        return Punctuator::MOD;
-      case '=':
-        return Punctuator::EQ;
-      case '&':
-        return Punctuator::BAND;
-      case '|':
-        return Punctuator::BOR;
-      case '^':
-        return Punctuator::BXOR;
-      case '~':
-        return Punctuator::BNOT;
-      case '!':
-        return Punctuator::NOT;
-      case '<':
-        return Punctuator::LT;
-      case '>':
-        return Punctuator::GT;
-      case '?':
-        return Punctuator::QUESTION;
-      default:
-        if (str == "<-")
-          return Punctuator::LARROW;
-        else if (str == "->")
-          return Punctuator::RARROW;
-        else if (str == "//")
-          return Punctuator::LINE_COMMENT;
-        else if (str == "/*")
-          return Punctuator::LBLOCK_COMMENT;
-        else if (str == "*/")
-          return Punctuator::RBLOCK_COMMENT;
-        else if (str == "++")
-          return Punctuator::PLUS_PLUS;
-        else if (str == "--")
-          return Punctuator::DASH_DASH;
-        else if (str == "+=")
-          return Punctuator::PLUS_EQ;
-        else if (str == "-=")
-          return Punctuator::DASH_EQ;
-        else if (str == "*=")
-          return Punctuator::STAR_EQ;
-        else if (str == "/=")
-          return Punctuator::SLASH_EQ;
-        else if (str == "%=")
-          return Punctuator::MOD_EQ;
-        else if (str == "<<")
-          return Punctuator::LSHIFT;
-        else if (str == ">>")
-          return Punctuator::RSHIFT;
-        else if (str == "<<=")
-          return Punctuator::LSHIFT_EQ;
-        else if (str == ">>=")
-          return Punctuator::RSHIFT_EQ;
-        else if (str == "&=")
-          return Punctuator::AND_EQ;
-        else if (str == "|=")
-          return Punctuator::OR_EQ;
-        else if (str == "^=")
-          return Punctuator::XOR_EQ;
-        else if (str == "~=")
-          return Punctuator::NOT_EQ;
-        else if (str == "&&")
-          return Punctuator::AND;
-        else if (str == "||")
-          return Punctuator::OR;
-        else if (str == "==")
-          return Punctuator::EQ_EQ;
-        else if (str == "!=")
-          return Punctuator::NEQ;
-        else if (str == "<=")
-          return Punctuator::LTE;
-        else if (str == ">=")
-          return Punctuator::GTE;
-        else
-          return Punctuator::UNKNOWN;
-    }
+    static const std::unordered_map<std::string_view, Punctuator>
+        punctuator_map = {{"@", Punctuator::AT},
+                          {"#", Punctuator::HASH},
+                          {"$", Punctuator::DOLLAR},
+                          {".", Punctuator::DOT},
+                          {",", Punctuator::COMMA},
+                          {":", Punctuator::COLON},
+                          {";", Punctuator::SEMI_COLON},
+                          {"{", Punctuator::LBRACE},
+                          {"}", Punctuator::RBRACE},
+                          {"(", Punctuator::LPAREN},
+                          {")", Punctuator::RPAREN},
+                          {"[", Punctuator::LBRACKET},
+                          {"]", Punctuator::RBRACKET},
+                          {"_", Punctuator::UNDER_SCORE},
+                          {"+", Punctuator::PLUS},
+                          {"-", Punctuator::DASH},
+                          {"*", Punctuator::STAR},
+                          {"/", Punctuator::SLASH},
+                          {"%", Punctuator::MOD},
+                          {"=", Punctuator::EQ},
+                          {"&", Punctuator::BAND},
+                          {"|", Punctuator::BOR},
+                          {"^", Punctuator::BXOR},
+                          {"~", Punctuator::BNOT},
+                          {"!", Punctuator::NOT},
+                          {"<", Punctuator::LT},
+                          {">", Punctuator::GT},
+                          {"?", Punctuator::QUESTION},
+                          {"<-", Punctuator::LARROW},
+                          {"->", Punctuator::RARROW},
+                          {"//", Punctuator::LINE_COMMENT},
+                          {"/*", Punctuator::LBLOCK_COMMENT},
+                          {"*/", Punctuator::RBLOCK_COMMENT},
+                          {"++", Punctuator::PLUS_PLUS},
+                          {"--", Punctuator::DASH_DASH},
+                          {"+=", Punctuator::PLUS_EQ},
+                          {"-=", Punctuator::DASH_EQ},
+                          {"*=", Punctuator::STAR_EQ},
+                          {"/=", Punctuator::SLASH_EQ},
+                          {"%=", Punctuator::MOD_EQ},
+                          {"<<", Punctuator::LSHIFT},
+                          {">>", Punctuator::RSHIFT},
+                          {"<<=", Punctuator::LSHIFT_EQ},
+                          {">>=", Punctuator::RSHIFT_EQ},
+                          {"&=", Punctuator::AND_EQ},
+                          {"|=", Punctuator::OR_EQ},
+                          {"^=", Punctuator::XOR_EQ},
+                          {"~=", Punctuator::NOT_EQ},
+                          {"&&", Punctuator::AND},
+                          {"||", Punctuator::OR},
+                          {"==", Punctuator::EQ_EQ},
+                          {"!=", Punctuator::NEQ},
+                          {"<=", Punctuator::LTE},
+                          {">=", Punctuator::GTE}};
+
+    auto it = punctuator_map.find(str);
+    return (it != punctuator_map.end()) ? it->second : Punctuator::UNKNOWN;
   }
 
   std::string_view PunctuatorHandler::from(Punctuator punc) {

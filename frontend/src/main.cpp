@@ -58,7 +58,9 @@ void testLexer(const std::string& input, const std::string& testName) {
         case TokenType::PUNCTUATOR:
           std::cout << "Token: Type=" << static_cast<int>(token.type)
                     << " - Special Punctuation: "
-                    << (int)std::get<Punctuator>(token.value.value()) << "\n";
+                    << PunctuatorHandler::from(
+                           std::get<Punctuator>(token.value.value()))
+                    << "\n";
           break;
 
         case TokenType::COMMENT:
