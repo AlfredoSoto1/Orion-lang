@@ -9,14 +9,34 @@
 
 namespace compiler {
 
-  class Lexer {
+  /**
+   * @class Lexer
+   * @brief Responsible for lexical analysis, converting source code into
+   *        tokens.
+   */
+  class Lexer final {
   public:
     using LexerResult = std::expected<Token, LexerError>;
 
   public:
-    Lexer(std::string_view src);
+    /**
+     * @brief Constructs a lexer with the given source code.
+     * @param src The source code to tokenize.
+     */
+    explicit Lexer(std::string_view src) noexcept;
 
+    /**
+     * @brief Generates a stream of tokens from the source code. This is
+     *        generaly used if you want to divide the compiler phases into
+     *        stages.
+     * @return TokenStream The stream of parsed tokens.
+     */
     TokenStream stream();
+
+    /**
+     * @brief Advances to the next token in the source code.
+     * @return LexerResult The next token or a lexer error.
+     */
     LexerResult advance();
 
   private:
@@ -47,8 +67,8 @@ namespace compiler {
     bool isEscapedChar(char c) const;
 
     char toEscapedChar(char c) const;
-    IParseResult toInt(std::string_view numeric_literal, uint8_t base) const;
-    DParseResult toDouble(std::string_view double_literal) const;
+    IParseResult toInt(std::string_view integer_literal, uint8_t base) const;
+    DParseResult toFloat(std::string_view float_literal) const;
 
   private:
     // Move the current position forward if the current character

@@ -12,7 +12,7 @@
 
 namespace compiler {
 
-  Lexer::Lexer(std::string_view src) : source(src) {}
+  Lexer::Lexer(std::string_view src) noexcept : source(src) {}
 
   Lexer::LexerResult Lexer::advance() {
     // Skip all whitespace characters until we reach a non-whitespace
@@ -111,10 +111,10 @@ namespace compiler {
       next();  // Consume '.'
       uint64_t precision_end =
           peekWhile([](char c) { return (bool)isdigit(c); });
-      std::string_view double_literal(source.data() + lexeme_start,
-                                      precision_end - lexeme_start);
+      std::string_view float_literal(source.data() + lexeme_start,
+                                     precision_end - lexeme_start);
 
-      auto num_result = toDouble(double_literal);
+      auto num_result = toFloat(float_literal);
       if (!num_result) return std::unexpected(num_result.error());
       return Token{TokenType::LITERAL,
                    Literal{LiteralType::FLOAT, *num_result}};
@@ -318,11 +318,11 @@ namespace compiler {
     }
   }
 
-  Lexer::DParseResult Lexer::toDouble(std::string_view double_literal) const {
+  Lexer::DParseResult Lexer::toFloat(std::string_view float_literal) const {
     double result;
     auto [ptr, ec] =
-        std::from_chars(double_literal.data(),
-                        double_literal.data() + double_literal.size(), result);
+        std::from_chars(float_literal.data(),
+                        float_literal.data() + float_literal.size(), result);
     if (ec != std::errc()) {
       return lexerError(LexerErrorType::PARSING_DOUBLE_ERROR,
                         "Error parsing double literal");
@@ -330,11 +330,11 @@ namespace compiler {
     return result;
   }
 
-  Lexer::IParseResult Lexer::toInt(std::string_view numeric_literal,
+  Lexer::IParseResult Lexer::toInt(std::string_view integer_literal,
                                    uint8_t base) const {
     uint64_t result = 0;
     auto [ptr, ec] = std::from_chars(
-        numeric_literal.data(), numeric_literal.data() + numeric_literal.size(),
+        integer_literal.data(), integer_literal.data() + integer_literal.size(),
         result, base);
     if (ec != std::errc()) {
       return lexerError(LexerErrorType::PARSING_INTEGER_ERROR,
