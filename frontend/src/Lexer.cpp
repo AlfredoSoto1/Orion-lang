@@ -7,8 +7,7 @@
  * @brief Expands into an unexpected lexer error
  *
  */
-#define lexerError(type, message) \
-  std::unexpected(LexerError{line, pos, type, message})
+#define lexerError(type) std::unexpected(LexerError{line, pos, type})
 
 namespace compiler {
 
@@ -39,8 +38,7 @@ namespace compiler {
     } else if (isPunctuator(c)) {
       return makePunctuator();
     } else {
-      return lexerError(LexerErrorType::UNKNOWN_CHARACTER,
-                        "Unknown character while scanning");
+      return lexerError(LexerErrorType::UNKNOWN_TOKEN);
     }
   }
 
@@ -52,8 +50,7 @@ namespace compiler {
     if (lexeme_end - lexeme_start > 256) {
       // Handle lexer error when identifier exceeds length
       // Throw lexer error or return an unknown token
-      return lexerError(LexerErrorType::INVALID_IDENTIFIER_LENGTH,
-                        "Identifier exceeds 256 characters.");
+      return lexerError(LexerErrorType::INVALID_IDENTIFIER_LENGTH);
     }
 
     std::string_view lexeme(source.data() + lexeme_start,
@@ -99,25 +96,34 @@ namespace compiler {
       }
     }
 
-    // Capture the numeric part
-    uint64_t lexeme_end = peekWhile(
-        [base](char c) { return base == 16 ? isalnum(c) : isdigit(c); });
-
-    std::string_view number_literal(source.data() + lexeme_start,
-                                    lexeme_end - lexeme_start);
-
     // Handle floating-point numbers (only for decimal)
     if (base == 10 && peek() == '.') {
       next();  // Consume '.'
-      uint64_t precision_end =
-          peekWhile([](char c) { return (bool)isdigit(c); });
+      uint64_t lexeme_end = peekWhile([](char c) { return (bool)isdigit(c); });
       std::string_view float_literal(source.data() + lexeme_start,
-                                     precision_end - lexeme_start);
+                                     lexeme_end - lexeme_start);
 
       auto num_result = toFloat(float_literal);
       if (!num_result) return std::unexpected(num_result.error());
       return Token{TokenType::LITERAL,
                    Literal{LiteralType::FLOAT, *num_result}};
+    }
+
+    // Capture numeric part
+    uint64_t lexeme_end = peekWhile([](char c) { return (bool)isalnum(c); });
+    std::string_view number_literal(source.data() + lexeme_start,
+                                    lexeme_end - lexeme_start);
+
+    // Validate number matches base rules
+    if (number_literal.empty()) {
+      return lexerError(LexerErrorType::UNEXPECTED_RADIX_PREFIX);
+    }
+
+    // Validate if the number of different base than 10 is valid
+    for (char c : number_literal) {
+      if (!isValidBaseNumber(c, base)) {
+        return lexerError(LexerErrorType::UNEXPECTED_RADIX_PREFIX);
+      }
     }
 
     // Convert integer based on detected base
@@ -158,8 +164,7 @@ namespace compiler {
     }
 
     if (!balanced) {
-      return lexerError(LexerErrorType::UNTERMINATED_STRING,
-                        "Missing closing quote.");
+      return lexerError(LexerErrorType::UNCLOSED_STRING_LITERAL);
     }
 
     return Token{TokenType::LITERAL,
@@ -171,16 +176,14 @@ namespace compiler {
     next();
 
     if (peek() == '\'') {
-      return lexerError(LexerErrorType::UNTERMINATED_STRING,
-                        "Quoted char should contain at least one character.");
+      return lexerError(LexerErrorType::INVALID_CHAR_LITERAL);
     }
 
     // consume and cache the char
     char c = next();
 
     if (peek() != '\'') {
-      return lexerError(LexerErrorType::UNTERMINATED_STRING,
-                        "Too many characters in char literal.");
+      return lexerError(LexerErrorType::MULTI_CHAR_CHAR_LITERAL);
     }
 
     // consume last '
@@ -211,6 +214,11 @@ namespace compiler {
         skipBlockComments();
       }
 
+      // Return error if block comment doesnt close correctly
+      if (punc == Punctuator::RBLOCK_COMMENT) {
+        return lexerError(LexerErrorType::UNCLOSED_BLOCK_COMMENT);
+      }
+
       // If the sub-longest punctuator is valid, return it
       if (punc != Punctuator::UNKNOWN) {
         return Token{TokenType::PUNCTUATOR, PunctuatorHandler::from(punc_view)};
@@ -222,8 +230,7 @@ namespace compiler {
     }
 
     // If no punctuator is matched, return unknown token
-    return lexerError(LexerErrorType::UNTERMINATED_STRING,
-                      "Invalid punctuator");
+    return lexerError(LexerErrorType::UNKNOWN_PUNCTUATOR);
   }
 
   char Lexer::next() {
@@ -340,6 +347,21 @@ namespace compiler {
            c == '\\';
   }
 
+  bool Lexer::isValidBaseNumber(char c, uint8_t base) const {
+    switch (base) {
+      case 2:
+        return c == '0' || c == '1';
+      case 8:
+        return c >= '0' && c <= '7';
+      case 10:
+        return (bool)isdigit(c);
+      case 16:
+        return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+      default:
+        return false;  // Invalid base (should never happen)
+    }
+  }
+
   char Lexer::toEscapedChar(char c) const {
     switch (c) {
       case 'n':
@@ -365,8 +387,7 @@ namespace compiler {
         std::from_chars(float_literal.data(),
                         float_literal.data() + float_literal.size(), result);
     if (ec != std::errc()) {
-      return lexerError(LexerErrorType::PARSING_DOUBLE_ERROR,
-                        "Error parsing double literal");
+      return lexerError(LexerErrorType::INVALID_FLOAT_LITERAL);
     }
     return result;
   }
@@ -378,8 +399,7 @@ namespace compiler {
         integer_literal.data(), integer_literal.data() + integer_literal.size(),
         result, base);
     if (ec != std::errc()) {
-      return lexerError(LexerErrorType::PARSING_INTEGER_ERROR,
-                        "Invalid integer literal");
+      return lexerError(LexerErrorType::INVALID_NUMBER_LITERAL);
     }
     return result;
   }

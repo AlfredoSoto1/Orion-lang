@@ -67,6 +67,7 @@ namespace compiler {
     bool isWhitespace(char c) const;
     bool isPunctuator(char c) const;
     bool isEscapedChar(char c) const;
+    bool isValidBaseNumber(char c, uint8_t base) const;
 
     char toEscapedChar(char c) const;
     IParseResult toInt(std::string_view integer_literal, uint8_t base) const;

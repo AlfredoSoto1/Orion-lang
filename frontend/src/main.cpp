@@ -83,8 +83,8 @@ void testLexer(const std::string& input, const std::string& testName) {
       }
     } else {
       LexerError error = result.error();
-      std::cerr << "Lexer Error at line " << error.line << ", pos " << error.pos
-                << ": " << error.message << "\n";
+      std::cerr << "Lexer Error at line " << error.line << ", col " << error.pos
+                << ": " << error.toString() << "\n";
       break;
     }
   }
@@ -97,10 +97,10 @@ int main() {
   //           "Identifiers and Keywords");
 
   // // Test Numeric Literals
-  // testLexer("123 456.78 0xABC 0777 0b101", "Numeric Literals");
+  // testLexer("123 456.78 0xABC 0777 0b101 0xffG", "Numeric Literals");
 
-  // // Test String Literals
-  // testLexer(R"( 'A' "YES")", "String Literals");
+  // Test String Literals
+  testLexer(R"( 'A' "YES" ""no"")", "String Literals");
 
   // // Test Special Punctuation
   // testLexer(R"(a+=-b**ptr;)", "Special Punctuation");
@@ -115,19 +115,19 @@ int main() {
   //   )",
   //           "Special Punctuation");
 
-  // Test nested comments
-  testLexer(R"(
-    int a = 0;
-    /* 
-      Outer comment
-      /* Nested comment */
-      /* Nested comment */
-      /* Nested comment */
-      /* Nested comment */
-    */
-    int a = 0;
-    )",
-            "Special Punctuation");
+  // // Test nested comments
+  // testLexer(R"(
+  //   int a = 0;
+  //   /*
+  //     Outer comment
+  //     /* Nested comment */
+  //     /* Nested comment */
+  //     /* Nested comment */
+  //     /* Nested comment */
+  //   */
+  //   int a = 0;
+  //   )",
+  //           "Special Punctuation");
 
   // // Test Unterminated String Error
   // testLexer("\"hello world", "Unterminated String Literal");
