@@ -103,7 +103,7 @@ int main() {
   // testLexer(R"( 'A' "YES")", "String Literals");
 
   // Test Special Punctuation
-  testLexer("!= && || += ++ +- -+ /=", "Special Punctuation");
+  testLexer("a += -a **ptr", "Special Punctuation");
 
   // // Test Unterminated String Error
   // testLexer("\"hello world", "Unterminated String Literal");

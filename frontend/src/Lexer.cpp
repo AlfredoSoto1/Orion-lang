@@ -65,8 +65,8 @@ namespace compiler {
 
     // If the lexeme is not a kewword, return it as an identifier
     if (kw == Keyword::UNDEFINED) {
-      Identifier id = {unique_hash++, std::string(lexeme)};
-      return Token{TokenType::IDENTIFIER, id};
+      return Token{TokenType::IDENTIFIER,
+                   Identifier{unique_hash++, std::string(lexeme)}};
     }
 
     return Token{TokenType::KEYWORD, kw};
@@ -196,40 +196,23 @@ namespace compiler {
     std::string_view punc_view(source.data() + punc_start,
                                punc_end - punc_start);
 
-    // PunctuatorHandler::from
+    // If the longest punctuator is not valid, break it into small punctuators
+    // until single punctuator.
+    while (!punc_view.empty()) {
+      Punctuator punc = PunctuatorHandler::from(punc_view);
 
-    // let single_punctuator =
-    //     Punctuator::from_str(&c.to_string())
-    //         .map_err(| _ |
-    //                  LexerError::InvalidToken(
-    //                      c, None, self.get_current_location().into()))
-    //     ? ;
+      // If the sub-longest punctuator is valid, return it
+      if (punc != Punctuator::UNKNOWN) {
+        return Token{TokenType::PUNCTUATOR, PunctuatorHandler::from(punc_view)};
+      }
 
-    // let double_punctuator = self.iter.peek_next_char().and_then(
-    //     | (_, next_char) |
-    //     Punctuator::from_str(&format !("{c}{next_char}")).ok());
+      // Move position back removing sufix
+      pos--;
+      punc_view.remove_suffix(1);
+    }
 
-    // // consume next char only if double char punctuator
-    // // since peek does not consume
-    // if double_punctuator
-    //   .is_some() { self.iter.advance(); }
-
-    // // double punctuator, if not single punctuator
-    // let punctuator = double_punctuator.unwrap_or(single_punctuator);
-
-    // let comment = match punctuator{
-    //     // Handle comment
-    //     Punctuator::LParenComment = > Some(self.multi_line_comment()),
-    //     Punctuator::SingleLineComment = > Some(self.singe_line_comment()),
-    //     _ = > None,
-    // };
-
-    // if let
-    //   Some(comment) = comment { return Ok(Token::Comment(comment)); }
-
-    // Ok(Token::Punctuator(punctuator))
-
-    return Token{TokenType::PUNCTUATOR, PunctuatorHandler::from(punc_view)};
+    // If no punctuator is matched, return unknown token
+    return Token{TokenType::PUNCTUATOR, Punctuator::UNKNOWN};
   }
 
   char Lexer::next() {
