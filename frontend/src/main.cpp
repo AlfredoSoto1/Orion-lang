@@ -99,8 +99,8 @@ int main() {
   // // Test Numeric Literals
   // testLexer("123 456.78 0xABC 0777 0b101 0xffG", "Numeric Literals");
 
-  // Test String Literals
-  testLexer(R"( 'A' "YES" ""no"")", "String Literals");
+  // // Test String Literals
+  // testLexer(R"( 'A' "YES" ""no"")", "String Literals");
 
   // // Test Special Punctuation
   // testLexer(R"(a+=-b**ptr;)", "Special Punctuation");
@@ -130,7 +130,7 @@ int main() {
   //           "Special Punctuation");
 
   // // Test Unterminated String Error
-  // testLexer("\"hello world", "Unterminated String Literal");
+  // testLexer(R"("hello world)", "Unterminated String Literal");
 
   // // Test Invalid Numeric Literal Length (Too long)
   // testLexer(std::string(300, '9'), "Invalid Numeric Literal Length");

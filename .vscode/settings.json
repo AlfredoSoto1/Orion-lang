@@ -65,6 +65,7 @@
     "xutility": "cpp",
     "array": "cpp",
     "unordered_map": "cpp",
-    "expected": "cpp"
+    "expected": "cpp",
+    "string_view": "cpp"
   }
 }

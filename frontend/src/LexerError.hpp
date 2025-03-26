@@ -44,6 +44,10 @@ namespace compiler {
     INVALID_UTF8_SEQUENCE,      // Unexpected invalid UTF-8 character sequence
   };
 
+  /**
+   * @brief
+   *
+   */
   class LexerError {
   public:
     uint64_t line;

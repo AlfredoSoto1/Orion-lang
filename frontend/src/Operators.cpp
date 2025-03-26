@@ -34,6 +34,8 @@ namespace compiler {
     if (str == "<=") return Operator::LTE;
     if (str == ">=") return Operator::GTE;
     if (str == "?:") return Operator::TERNARY;
+
+    return Operator::UNKNOWN;
   }
 
   bool OperatorHandler::isUnary(Operator op) { return false; }

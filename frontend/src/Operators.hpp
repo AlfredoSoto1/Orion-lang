@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace compiler {
 
@@ -61,6 +61,8 @@ namespace compiler {
     EXPR_REFERENCE,  // &&
     PTR,             // *
     PTR_DEREF,       // *
+
+    UNKNOWN,
   };
 
   class OperatorHandler {

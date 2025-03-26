@@ -1,8 +1,7 @@
 #pragma once
 
 #include <expected>
-#include <string>
-#include <vector>
+#include <string_view>
 
 #include "LexerError.hpp"
 #include "Tokens.hpp"
