@@ -60,6 +60,8 @@ namespace compiler {
     char peek() const;
     char peekNext() const;
     void skipWhitespace();
+    void skipLineComment();
+    void skipBlockComments();
 
   private:
     bool isWhitespace(char c) const;

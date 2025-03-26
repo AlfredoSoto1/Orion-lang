@@ -201,6 +201,16 @@ namespace compiler {
     while (!punc_view.empty()) {
       Punctuator punc = PunctuatorHandler::from(punc_view);
 
+      // If the punctuator is a comment, skip it
+      if (punc == Punctuator::LINE_COMMENT) {
+        skipLineComment();
+      }
+
+      // If the punctuator is a block comment, skip it
+      if (punc == Punctuator::LBLOCK_COMMENT) {
+        skipBlockComments();
+      }
+
       // If the sub-longest punctuator is valid, return it
       if (punc != Punctuator::UNKNOWN) {
         return Token{TokenType::PUNCTUATOR, PunctuatorHandler::from(punc_view)};
@@ -212,7 +222,8 @@ namespace compiler {
     }
 
     // If no punctuator is matched, return unknown token
-    return Token{TokenType::PUNCTUATOR, Punctuator::UNKNOWN};
+    return lexerError(LexerErrorType::UNTERMINATED_STRING,
+                      "Invalid punctuator");
   }
 
   char Lexer::next() {
@@ -238,6 +249,36 @@ namespace compiler {
     // Skip all whitespace characters until we reach a non-whitespace
     // character or the end of the source code.
     while (peek() != '\0' && isWhitespace(peek())) {
+      if (peek() == '\n') line++;
+      pos++;
+    }
+  }
+
+  void Lexer::skipLineComment() {
+    // Skip all characters before new line hits
+    while (peek() != '\0' && peek() != '\n') pos++;
+    line++;
+  }
+
+  void Lexer::skipBlockComments() {
+    // Set to 1 since we expect to have already consumed the first '/*'
+    uint32_t nested_count = 1;
+
+    // Move the position until the opening and closing of block comments is
+    // balanced.
+    while (peek() != '\0' && nested_count != 0) {
+      bool opening = peek() == '/' && peekNext() == '*';
+      bool closing = peek() == '*' && peekNext() == '/';
+
+      if (opening) {
+        nested_count++;
+        pos += 1;
+      }
+      if (closing) {
+        nested_count--;
+        pos += 1;
+      }
+
       if (peek() == '\n') line++;
       pos++;
     }

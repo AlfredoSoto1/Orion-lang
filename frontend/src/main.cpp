@@ -102,8 +102,32 @@ int main() {
   // // Test String Literals
   // testLexer(R"( 'A' "YES")", "String Literals");
 
-  // Test Special Punctuation
-  testLexer(R"(a+=-b**ptr;)", "Special Punctuation");
+  // // Test Special Punctuation
+  // testLexer(R"(a+=-b**ptr;)", "Special Punctuation");
+
+  // // Test line comments
+  // testLexer(R"(
+  //   int a = 0;
+  //   // This is a comment
+  //   int a = 0;
+  //   // This is a comment
+  //   int a = 0;
+  //   )",
+  //           "Special Punctuation");
+
+  // Test nested comments
+  testLexer(R"(
+    int a = 0;
+    /* 
+      Outer comment
+      /* Nested comment */
+      /* Nested comment */
+      /* Nested comment */
+      /* Nested comment */
+    */
+    int a = 0;
+    )",
+            "Special Punctuation");
 
   // // Test Unterminated String Error
   // testLexer("\"hello world", "Unterminated String Literal");
