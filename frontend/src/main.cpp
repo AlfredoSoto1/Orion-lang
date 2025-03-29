@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "TokenStream.hpp"
+#include "ast/ParserTest.hpp"
 
 using namespace compiler;
 
@@ -112,6 +113,15 @@ void testTokenStream(const std::string& input, const std::string& testName) {
       break;
     }
   }
+}
+
+void testParser(const std::string& input, const std::string& testName) {
+  Lexer lexer(input);
+  std::cout << "Testing input: \"" << input << "\" (" << testName << ")\n";
+
+  TokenStream stream = TokenStream(lexer, 10);
+
+  Parser parser = Parser(stream);
 }
 
 int main() {

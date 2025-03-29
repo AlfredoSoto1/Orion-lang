@@ -6,8 +6,6 @@
 
 namespace compiler {
 
-  struct TokenStreamError {};
-
   class TokenStream final {
   public:
     /**
