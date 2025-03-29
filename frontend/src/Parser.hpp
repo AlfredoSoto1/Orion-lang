@@ -1,7 +1,6 @@
 #pragma once
 
 #include <expected>
-#include <string>
 #include <string_view>
 
 // TEMP
@@ -14,7 +13,7 @@ namespace compiler {
    */
   class Parser final {
   public:
-    using ParseResult = std::expected<int, ParserError>;
+    // using ParseResult = std::expected<ParserError, ParserError>;
 
   public:
     explicit Parser() noexcept;

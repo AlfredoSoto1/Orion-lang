@@ -11,7 +11,8 @@
 
 namespace compiler {
 
-  Lexer::Lexer(std::string_view src) noexcept : source(src) {}
+  Lexer::Lexer(std::string_view src) noexcept
+      : pos(0), line(0), unique_hash(0), source(src) {}
 
   Lexer::LexerResult Lexer::advance() {
     // Skip all whitespace characters until we reach a non-whitespace
@@ -199,6 +200,8 @@ namespace compiler {
     std::string_view punc_view(source.data() + punc_start,
                                punc_end - punc_start);
 
+    bool is_comment = false;
+
     // If the longest punctuator is not valid, break it into small punctuators
     // until single punctuator.
     while (!punc_view.empty()) {
@@ -207,11 +210,13 @@ namespace compiler {
       // If the punctuator is a comment, skip it
       if (punc == Punctuator::LINE_COMMENT) {
         skipLineComment();
+        is_comment = true;
       }
 
       // If the punctuator is a block comment, skip it
       if (punc == Punctuator::LBLOCK_COMMENT) {
         skipBlockComments();
+        is_comment = true;
       }
 
       // Return error if block comment doesnt close correctly
@@ -221,7 +226,8 @@ namespace compiler {
 
       // If the sub-longest punctuator is valid, return it
       if (punc != Punctuator::UNKNOWN) {
-        return Token{TokenType::PUNCTUATOR, PunctuatorHandler::from(punc_view)};
+        return Token{is_comment ? TokenType::COMMENT : TokenType::PUNCTUATOR,
+                     PunctuatorHandler::from(punc_view)};
       }
 
       // Move position back removing sufix
@@ -233,26 +239,26 @@ namespace compiler {
     return lexerError(LexerErrorType::UNKNOWN_PUNCTUATOR);
   }
 
-  char Lexer::next() {
+  char Lexer::next() noexcept {
     // Move the position to the next character in the source code
     // and return the character at the new position. This consumes
     // the character at the current position.
     return (pos < source.length()) ? source[pos++] : '\0';
   }
 
-  char Lexer::peek() const {
+  char Lexer::peek() const noexcept {
     // Return the character at the current position in the source code
     // This does not consume the character at the current position.
     return (pos < source.length()) ? source[pos] : '\0';
   }
 
-  char Lexer::peekNext() const {
+  char Lexer::peekNext() const noexcept {
     // Return the character at the next position in the source code
     // This does not consume the character at the current position.
     return (pos + 1 < source.length()) ? source[pos + 1] : '\0';
   }
 
-  void Lexer::skipWhitespace() {
+  void Lexer::skipWhitespace() noexcept {
     // Skip all whitespace characters until we reach a non-whitespace
     // character or the end of the source code.
     while (peek() != '\0' && isWhitespace(peek())) {
@@ -261,13 +267,13 @@ namespace compiler {
     }
   }
 
-  void Lexer::skipLineComment() {
+  void Lexer::skipLineComment() noexcept {
     // Skip all characters before new line hits
     while (peek() != '\0' && peek() != '\n') pos++;
     line++;
   }
 
-  void Lexer::skipBlockComments() {
+  void Lexer::skipBlockComments() noexcept {
     // Set to 1 since we expect to have already consumed the first '/*'
     uint32_t nested_count = 1;
 
@@ -291,7 +297,7 @@ namespace compiler {
     }
   }
 
-  bool Lexer::isWhitespace(char c) const {
+  bool Lexer::isWhitespace(char c) const noexcept {
     switch (c) {
       case ' ':   // Space
       case '\t':  // Tab
@@ -305,7 +311,7 @@ namespace compiler {
     }
   }
 
-  bool Lexer::isPunctuator(char c) const {
+  bool Lexer::isPunctuator(char c) const noexcept {
     switch (c) {
       case '@':
       case '#':
@@ -342,12 +348,12 @@ namespace compiler {
     }
   }
 
-  bool Lexer::isEscapedChar(char c) const {
+  bool Lexer::isEscapedChar(char c) const noexcept {
     return c == 'n' || c == 'r' || c == '"' || c == '\'' || c == '0' ||
            c == '\\';
   }
 
-  bool Lexer::isValidBaseNumber(char c, uint8_t base) const {
+  bool Lexer::isValidBaseNumber(char c, uint8_t base) const noexcept {
     switch (base) {
       case 2:
         return c == '0' || c == '1';
@@ -362,7 +368,7 @@ namespace compiler {
     }
   }
 
-  char Lexer::toEscapedChar(char c) const {
+  char Lexer::toEscapedChar(char c) const noexcept {
     switch (c) {
       case 'n':
         return '\n';

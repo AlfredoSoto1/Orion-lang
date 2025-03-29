@@ -25,23 +25,15 @@ namespace compiler {
     explicit Lexer(std::string_view src) noexcept;
 
     /**
-     * @brief Generates a stream of tokens from the source code. This is
-     *        generaly used if you want to divide the compiler phases into
-     *        stages.
-     * @return TokenStream The stream of parsed tokens.
-     */
-    TokenStream stream();
-
-    /**
      * @brief Advances to the next token in the source code.
      * @return LexerResult The next token or a lexer error.
      */
     LexerResult advance();
 
   private:
-    uint64_t pos = 0;
-    uint64_t line = 0;
-    uint64_t unique_hash = 0;
+    uint64_t pos;
+    uint64_t line;
+    uint64_t unique_hash;
     std::string_view source;
 
     using DParseResult = std::expected<double, LexerError>;
@@ -55,20 +47,20 @@ namespace compiler {
     LexerResult makePunctuator();
 
   private:
-    char next();
-    char peek() const;
-    char peekNext() const;
-    void skipWhitespace();
-    void skipLineComment();
-    void skipBlockComments();
+    char next() noexcept;
+    char peek() const noexcept;
+    char peekNext() const noexcept;
+    void skipWhitespace() noexcept;
+    void skipLineComment() noexcept;
+    void skipBlockComments() noexcept;
 
   private:
-    bool isWhitespace(char c) const;
-    bool isPunctuator(char c) const;
-    bool isEscapedChar(char c) const;
-    bool isValidBaseNumber(char c, uint8_t base) const;
+    bool isWhitespace(char c) const noexcept;
+    bool isPunctuator(char c) const noexcept;
+    bool isEscapedChar(char c) const noexcept;
+    bool isValidBaseNumber(char c, uint8_t base) const noexcept;
 
-    char toEscapedChar(char c) const;
+    char toEscapedChar(char c) const noexcept;
     IParseResult toInt(std::string_view integer_literal, uint8_t base) const;
     DParseResult toFloat(std::string_view float_literal) const;
 
@@ -76,7 +68,7 @@ namespace compiler {
     // Move the current position forward if the current character
     // meets the condition and it hasn't reached the end of file.
     template <typename Condition>
-    uint64_t peekWhile(Condition&& condition) {
+    uint64_t peekWhile(Condition&& condition) noexcept {
       while (condition(peek()) && peek() != '\0') {
         if (peek() == '\n') line++;
         pos++;

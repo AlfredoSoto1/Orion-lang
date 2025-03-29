@@ -3,9 +3,72 @@
 #include <variant>
 #include <vector>
 
-#include "Lexer.hpp"
+#include "TokenStream.hpp"
 
 using namespace compiler;
+
+bool testToken(const Token& token) {
+  switch (token.type) {
+    case TokenType::KEYWORD:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - Keyword: "
+                << KeywordHandler::from(std::get<Keyword>(token.value.value()))
+                << "\n";
+      break;
+
+    case TokenType::IDENTIFIER:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - Identifier: "
+                << std::get<Identifier>(token.value.value()).name << "\n";
+      break;
+
+    case TokenType::LITERAL: {
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - Numeric Literal: ";
+
+      Literal lt = std::get<Literal>(token.value.value());
+      switch (lt.type) {
+        case LiteralType::INTEGER:
+          std::cout << std::get<uint64_t>(lt.value) << "\n";
+          break;
+        case LiteralType::FLOAT:
+          std::cout << std::get<double>(lt.value) << "\n";
+          break;
+        case LiteralType::CHAR:
+          std::cout << std::get<char>(lt.value) << "\n";
+          break;
+        case LiteralType::STRING:
+          std::cout << std::get<std::string>(lt.value) << "\n";
+          break;
+        default:
+          std::cerr << "Unknown literal type\n";
+      }
+    } break;
+
+    case TokenType::PUNCTUATOR:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - Special Punctuation: "
+                << PunctuatorHandler::from(
+                       std::get<Punctuator>(token.value.value()))
+                << "\n";
+      break;
+
+    case TokenType::COMMENT:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - Comment\n";
+      break;
+
+    case TokenType::ENDOF:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - End of File\n";
+      return true;
+
+    default:
+      std::cerr << "Unknown token type.\n";
+  }
+
+  return false;
+}
 
 void testLexer(const std::string& input, const std::string& testName) {
   Lexer lexer(input);
@@ -15,72 +78,7 @@ void testLexer(const std::string& input, const std::string& testName) {
     auto result = lexer.advance();
 
     if (result) {
-      Token token = *result;
-
-      switch (token.type) {
-        case TokenType::KEYWORD:
-          std::cout << "Token: Type=" << static_cast<int>(token.type)
-                    << " - Keyword: "
-                    << KeywordHandler::from(
-                           std::get<Keyword>(token.value.value()))
-                    << "\n";
-          break;
-
-        case TokenType::IDENTIFIER:
-          std::cout << "Token: Type=" << static_cast<int>(token.type)
-                    << " - Identifier: "
-                    << std::get<Identifier>(token.value.value()).name << "\n";
-          break;
-
-        case TokenType::LITERAL: {
-          std::cout << "Token: Type=" << static_cast<int>(token.type)
-                    << " - Numeric Literal: ";
-
-          Literal lt = std::get<Literal>(token.value.value());
-          switch (lt.type) {
-            case LiteralType::INTEGER:
-              std::cout << std::get<uint64_t>(lt.value) << "\n";
-              break;
-            case LiteralType::FLOAT:
-              std::cout << std::get<double>(lt.value) << "\n";
-              break;
-            case LiteralType::CHAR:
-              std::cout << std::get<char>(lt.value) << "\n";
-              break;
-            case LiteralType::STRING:
-              std::cout << std::get<std::string>(lt.value) << "\n";
-              break;
-            default:
-              std::cerr << "Unknown literal type\n";
-          }
-        } break;
-
-        case TokenType::PUNCTUATOR:
-          std::cout << "Token: Type=" << static_cast<int>(token.type)
-                    << " - Special Punctuation: "
-                    << PunctuatorHandler::from(
-                           std::get<Punctuator>(token.value.value()))
-                    << "\n";
-          break;
-
-        case TokenType::COMMENT:
-          std::cout << "Token: Type=" << static_cast<int>(token.type)
-                    << " - Special Punctuation: " << "\n";
-          break;
-
-        case TokenType::ENDOF:
-          std::cout << "Token: Type=" << static_cast<int>(token.type)
-                    << " - End of File\n";
-          return;
-
-        default:
-          std::cerr << "Unknown token type.\n";
-
-          // End of the token stream
-          if (token.type == TokenType::ENDOF) {
-            return;
-          }
-      }
+      if (testToken(*result)) return;
     } else {
       LexerError error = result.error();
       std::cerr << "Lexer Error at line " << error.line << ", col " << error.pos
@@ -91,67 +89,51 @@ void testLexer(const std::string& input, const std::string& testName) {
   std::cout << "--------------------------------\n";
 }
 
+void testTokenStream(const std::string& input, const std::string& testName) {
+  Lexer lexer(input);
+  std::cout << "Testing input: \"" << input << "\" (" << testName << ")\n";
+
+  TokenStream stream = TokenStream(lexer, 10);
+
+  while (stream.hasNext()) {
+    auto result = stream.next();
+    if (!result.has_value()) {
+      LexerError error = result.error();
+      std::cerr << "Lexer Error at line " << error.line << ", col " << error.pos
+                << ": " << error.toString() << "\n";
+      break;
+    }
+
+    if ((*result).type != TokenType::ENDOF) {
+      testToken((*result));
+      std::cout << "Next Token: " << std::endl;
+    } else {
+      std::cout << "End of Stream" << std::endl;
+      break;
+    }
+  }
+}
+
 int main() {
-  // // Test Identifiers and Keywords
-  // testLexer("int main return void function identifier123 and_others _ _no",
-  //           "Identifiers and Keywords");
-
-  // // Test Numeric Literals
-  // testLexer("123 456.78 0xABC 0777 0b101 0xffG", "Numeric Literals");
-
-  // // Test String Literals
-  // testLexer(R"( 'A' "YES" ""no"")", "String Literals");
-
-  // // Test Special Punctuation
-  // testLexer(R"(a+=-b**ptr;)", "Special Punctuation");
-
-  // // Test line comments
   // testLexer(R"(
-  //   int a = 0;
-  //   // This is a comment
-  //   int a = 0;
-  //   // This is a comment
-  //   int a = 0;
-  //   )",
-  //           "Special Punctuation");
+  //   int a = 5;
+  //   int b = 10; // Another variable
 
-  // // Test nested comments
-  // testLexer(R"(
-  //   int a = 0;
-  //   /*
-  //     Outer comment
-  //     /* Nested comment */
-  //     /* Nested comment */
-  //     /* Nested comment */
-  //     /* Nested comment */
-  //   */
-  //   int a = 0;
-  //   )",
-  //           "Special Punctuation");
+  //   void main() {
+  //     a += b * 20;
+  //   }
+  // )",
+  //           "LEXER TEST");
 
-  // // Test Unterminated String Error
-  // testLexer(R"("hello world)", "Unterminated String Literal");
+  testTokenStream(R"(
+    int a = 5;
+    int b = 10; // Another variable
 
-  // // Test Invalid Numeric Literal Length (Too long)
-  // testLexer(std::string(300, '9'), "Invalid Numeric Literal Length");
-
-  // // Test Unknown Character Error
-  // testLexer("@", "Unknown Character Error");
-
-  // // Test Edge Case: Empty String (Nothing to parse)
-  // testLexer("", "Empty String");
-
-  // // Test Edge Case: Single Character (just an identifier)
-  // testLexer("a", "Single Character Identifier");
-
-  // // Test Edge Case: Reserved Keyword as Identifier (e.g., 'return')
-  // testLexer("return", "Keyword as Identifier");
-
-  // // Test Edge Case: Just a number with no space
-  // testLexer("123456789012345", "Large Numeric Literal");
-
-  // // Test Edge Case: Invalid characters
-  // testLexer("a@b$c", "Invalid Characters");
+    void main() {
+      a += b * 20;
+    }
+  )",
+                  "TOKEN STREAM TEST");
 
   return 0;
 }

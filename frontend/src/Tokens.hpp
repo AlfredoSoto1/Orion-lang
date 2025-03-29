@@ -18,12 +18,20 @@ namespace compiler {
     std::string name;
   };
 
+  /**
+   * @brief
+   *
+   */
   struct EndOfFile {
     uint64_t line;
     uint64_t column;
     std::string path;
   };
 
+  /**
+   * @brief
+   *
+   */
   enum class LiteralType {
     INTEGER,
     FLOAT,
@@ -31,6 +39,10 @@ namespace compiler {
     STRING,
   };
 
+  /**
+   * @brief
+   *
+   */
   struct Literal {
     LiteralType type;
     std::variant<char,         // Single Byte character
@@ -40,6 +52,10 @@ namespace compiler {
         value;
   };
 
+  /**
+   * @brief
+   *
+   */
   enum class TokenType {
     FIRST,
     KEYWORD,
@@ -67,26 +83,13 @@ namespace compiler {
     std::optional<TokenValue> value;
   };
 
+  /**
+   * @brief
+   *
+   */
   struct MetaToken {
     Token* token;
     size_t line;
     size_t column;
   };
-
-  class TokenStream {
-  public:
-    TokenStream(uint8_t buffer_size);
-
-    const Token& next();
-    const Token& current() const;
-
-    const Token& peek() const;
-    const Token& peekNext() const;
-
-    bool hasNext() const;
-
-  private:
-    uint8_t buffer_size;
-  };
-
 }  // namespace compiler
