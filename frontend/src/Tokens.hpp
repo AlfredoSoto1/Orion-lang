@@ -70,8 +70,7 @@ namespace compiler {
                                   Literal,     // Literal
                                   Identifier,  // Identifier
                                   Punctuator,  // Punctuator
-                                  EndOfFile,   // End of file
-                                  uint8_t>;    // Unknown error code
+                                  EndOfFile>;  // End of file
 
   /**
    * @brief Represents a token in the source code.

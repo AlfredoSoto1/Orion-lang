@@ -35,6 +35,9 @@ namespace compiler {
       // Fill the buffer and move to the next slot.
       buffer[bpos++] = *result;
     } while (bpos != buffer_size);
+
+    // Back to start
+    bpos = 0;
   }
 
   TokenStream::~TokenStream() noexcept {

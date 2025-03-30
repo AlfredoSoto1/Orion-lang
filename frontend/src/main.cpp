@@ -122,6 +122,8 @@ void testParser(const std::string& input, const std::string& testName) {
   TokenStream stream = TokenStream(lexer, 10);
 
   Parser parser = Parser(stream);
+
+  parser.parse();
 }
 
 int main() {
@@ -135,15 +137,23 @@ int main() {
   // )",
   //           "LEXER TEST");
 
-  testTokenStream(R"(
-    int a = 5;
-    int b = add(a, b); // Another variable
+  // testTokenStream(R"(
+  //   int a = 5;
+  //   int b = add(a, b); // Another variable
 
-    void main(int a) {
-      a += b * 20;
-    }
+  //   void main(int a) {
+  //     a += b * 20;
+  //   }
+  // )",
+  //                 "TOKEN STREAM TEST");
+
+  testParser(R"(
+    a + b
+    int a;
+    int a = 5;
+    int a = 5;
   )",
-                  "TOKEN STREAM TEST");
+             "PARSER TEST");
 
   return 0;
 }

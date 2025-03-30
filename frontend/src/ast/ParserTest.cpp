@@ -1,5 +1,6 @@
-
 #include "ParserTest.hpp"
+
+#include <iostream>
 
 namespace compiler {
 
@@ -12,164 +13,363 @@ namespace compiler {
       // we are currently applying.
 
       // Check if the detected grammar allows a reduction
-      if (isReducible()) {
-        applyReduction();
-      } else {
-        // If we can't reduce, shift the next token into the AST stack
-        ast_stack.push(ASTNode{GrammarType::UNFINISHED, tokens.peek()});
-        tokens.next();  // Resolve lexer error
+      if (!tryReduce()) {
+        shift();
       }
     }
   }
 
-  bool Parser::reduce() {
-    // Take the AST and reduce it to a single node.
-    // This gets pushed to the ast_stack and marked
-    // as unfinished if the AST is not completed.
+  void Parser::shift() {
+    // If we can't reduce, shift the next token into the AST stack
+    const Token& tok = tokens.peek();
 
-    // If the AST can be built completely, apply a
-    // reduction and push it to the stack.
+    // Skip comment tokens
+    if (tok.type == TokenType::COMMENT) {
+      tokens.next();
+      return;
+    }
+
+    // Determine the appropriate Grammar based on the token type
+    Grammar grammar = Grammar::UNKNOWN;
+
+    switch (tok.type) {
+      case TokenType::KEYWORD:
+        // Handle keyword tokens (e.g., 'int', 'return')
+        grammar = Grammar::KEYWORD;  // For example, keywords could be
+                                     // punctuation in some grammar rules
+        break;
+
+      case TokenType::IDENTIFIER:
+        // Handle identifier tokens (e.g., variable names)
+        grammar = Grammar::IDENT;
+        break;
+
+      case TokenType::LITERAL:
+        // Handle literal tokens (e.g., integers, strings)
+        grammar = Grammar::LITERAL;
+        break;
+
+      case TokenType::PUNCTUATOR:
+        // Handle punctuator tokens (e.g., '+', '=', ';')
+        grammar = Grammar::PUNC;
+        break;
+
+      default:
+        // If token type is not recognized, leave it as UNFINISHED or handle
+        // accordingly
+        grammar = Grammar::UNKNOWN;  // THIS SHOULD NEVER HAPPEN
+        break;
+    }
+
+    // Push the token with the determined grammar type onto the stack
+    ast_stack.push(ASTNode{grammar, tok});
+    tokens.next();
   }
 
-  bool Parser::isReducible() {
-    // Check if the currenct set of tokens match to a grammar.
+  bool Parser::tryReduce() {
+    using enum Grammar;
+
+    if (ast_stack.empty()) {
+      return false;
+    }
+
+    auto match = [&](std::initializer_list<Grammar> pattern) -> bool {
+      if (ast_stack.size() < pattern.size()) {
+        return false;
+      }
+      std::stack<ASTNode> temp;
+
+      // Loop through the pattern using index-based access
+      for (Grammar grammar : pattern) {
+        if (ast_stack.top().grammar != grammar) {
+          // Restore stack on failure
+          while (!temp.empty()) {
+            ast_stack.push(temp.top());
+            temp.pop();
+          }
+          return false;
+        }
+        temp.push(ast_stack.top());  // Save valid matches
+        ast_stack.pop();
+      }
+
+      // Restore stack
+      while (!temp.empty()) {
+        ast_stack.push(temp.top());
+        temp.pop();
+      }
+      return true;
+    };
+
+    // This is where you implement the reduction logic based on your grammar
+    // rules. You need to examine the top elements of the ast_stack_ and see if
+    // they match the right-hand side of any of your grammar rules.
+
+    // Example grammar rules (very simplified):
+    // 1. Expression -> Expression + Term
+    // 2. Expression -> Term
+    // 3. Term -> Term * Factor
+    // 4. Term -> Factor
+    // 5. Factor -> IDENTIFIER
+    // 6. Factor -> NUMBER
+    // 7. Factor -> ( Expression )
+
+    // Implement checks for these rules (or your actual grammar)
+
+    // Rule 1: Expression -> Expression + Term
+    if (ast_stack.size() >= 3 && match({TERM, PUNC, EXPR})) {
+      ASTNode term = ast_stack.top();
+      ast_stack.pop();
+      ASTNode plus_op = ast_stack.top();
+      ast_stack.pop();
+      ASTNode expr = ast_stack.top();
+      ast_stack.pop();
+
+      if (plus_op.grammar == PUNC &&
+          std::get<Punctuator>(std::get<Token>(plus_op.value).value.value()) ==
+              Punctuator::PLUS) {
+        ast_stack.push(
+            ASTNode{EXPR, std::vector<ASTNode>{expr, plus_op, term}});
+        return true;
+      } else {
+        // Restore stack if the operator is not a '+'
+        ast_stack.push(expr);
+        ast_stack.push(plus_op);
+        ast_stack.push(term);
+      }
+    }
+
+    // Rule 3: Term -> Term * Factor
+    if (ast_stack.size() >= 3 && match({FACTOR, PUNC, TERM})) {
+      ASTNode factor = ast_stack.top();
+      ast_stack.pop();
+      ASTNode mult_op = ast_stack.top();
+      ast_stack.pop();
+      ASTNode term = ast_stack.top();
+      ast_stack.pop();
+
+      if (mult_op.grammar == PUNC &&
+          std::get<Punctuator>(std::get<Token>(mult_op.value).value.value()) ==
+              Punctuator::STAR) {
+        ast_stack.push(
+            ASTNode{TERM, std::vector<ASTNode>{term, mult_op, factor}});
+        return true;
+      } else {
+        // Restore stack if the operator is not '*'
+        ast_stack.push(term);
+        ast_stack.push(mult_op);
+        ast_stack.push(factor);
+      }
+    }
+
+    // Rule 7: Factor -> ( Expression )
+    if (ast_stack.size() >= 3 && match({RPAREN, EXPR, LPAREN})) {
+      ASTNode rparen = ast_stack.top();
+      ast_stack.pop();
+      ASTNode expression = ast_stack.top();
+      ast_stack.pop();
+      ASTNode lparen = ast_stack.top();
+      ast_stack.pop();
+
+      if (lparen.grammar == LPAREN && rparen.grammar == RPAREN) {
+        ast_stack.push(
+            ASTNode{FACTOR, std::vector<ASTNode>{lparen, expression, rparen}});
+        return true;
+      } else {
+        // Restore stack if parentheses are not valid
+        ast_stack.push(lparen);
+        ast_stack.push(expression);
+        ast_stack.push(rparen);
+      }
+    }
+
+    // Rule 5: Factor -> IDENTIFIER
+    if (match({IDENT})) {
+      ASTNode identifier = ast_stack.top();
+      ast_stack.pop();
+      ast_stack.push(ASTNode{FACTOR, std::vector<ASTNode>{identifier}});
+      return true;
+    }
+
+    // Rule 6: Factor -> NUMBER
+    if (match({LITERAL})) {
+      ASTNode literal = ast_stack.top();
+      ast_stack.pop();
+      ast_stack.push(ASTNode{FACTOR, std::vector<ASTNode>{literal}});
+      return true;
+    }
+
+    // Rule 4: Term -> Factor
+    if (match({FACTOR})) {
+      ASTNode factor = ast_stack.top();
+      ast_stack.pop();
+      ast_stack.push(ASTNode{TERM, std::vector<ASTNode>{factor}});
+      return true;
+    }
+
+    // Rule 2: Expression -> Term
+    if (match({TERM})) {
+      ASTNode term = ast_stack.top();
+      ast_stack.pop();
+      ast_stack.push(ASTNode{EXPR, std::vector<ASTNode>{term}});
+      return true;
+    }
+
+    // If no match is found, return false
+    return false;
   }
 
-  void Parser::applyReduction() {
-    // Combine multiple AST from stack and push it back to stack.
-  }
+  //   bool Parser::tryReduce() {
+  //     using enum Grammar;
 
-  // std::shared_ptr<ASTNode> makeASTLeaf(const compiler::Token& token) {
-  //   // Here, we decide based on token type.
-  //   // For example, an identifier or literal is a leaf.
-  //   switch (token.type) {
-  //     case compiler::TokenType::IDENTIFIER:
-  //       return std::make_shared<ASTNode>(
-  //           NodeType::IDENTIFIER,
-  //           std::get<compiler::Identifier>(token.value.value()).name);
-  //     case compiler::TokenType::LITERAL:
-  //       // For literal, convert to string (this is simplistic)
-  //       return std::make_shared<ASTNode>(NodeType::LITERAL, "literal");
-  //     case compiler::TokenType::KEYWORD:
-  //       // Keywords can be leaf nodes too.
-  //       // (You may need to convert the keyword to a string.)
-  //       return std::make_shared<ASTNode>(NodeType::IDENTIFIER, "keyword");
-  //     case compiler::TokenType::PUNCTUATOR:
-  //       // Punctuators may be used in operators.
-  //       return std::make_shared<ASTNode>(NodeType::PUNCTUATOR, "punctuator");
-  //     default:
-  //       return std::make_shared<ASTNode>(NodeType::IDENTIFIER, "unknown");
-  //   }
+  //     if (ast_stack.empty()) {
+  //         return false;
+  //     }
+
+  // // Reduction rules
+  // std::vector<ASTNode> nodes;
+
+  // auto match = [&](std::initializer_list<Grammar> pattern) -> bool {
+  //     if (ast_stack.size() < pattern.size()) {
+  //         return false;
+  //     }
+  //     nodes.clear();
+  //     for (auto it = pattern.begin(); it != pattern.end(); ++it) {
+  //         nodes.push_back(ast_stack.top());
+  //         ast_stack.pop();
+  //         if (nodes.back().grammar != *it) {
+  //             for (auto rit = nodes.rbegin(); rit != nodes.rend(); ++rit)
+  //             {
+  //                 ast_stack.push(*rit);
+  //             }
+  //             return false;
+  //         }
+  //     }
+  //     std::reverse(nodes.begin(), nodes.end());
+  //     return true;
+  // };
+
+  //     auto reduce = [&](Grammar result) {
+  //         ast_stack.emplace(ASTNode{result, nodes});
+  //     };
+
+  //     // Primary expression
+  //     if (match({IDEN}) || match({LITERAL}) || match({PUNC, EXPR, PUNC})) {
+  //         reduce(PRIMARY_EXPR);
+  //         return true;
+  //     }
+
+  //     // Postfix expressions
+  //     if (match({PRIMARY_EXPR})) {
+  //         reduce(POSTFIX_EXPR);
+  //         return true;
+  //     }
+  //     if (match({POSTFIX_EXPR, PUNC, EXPR, PUNC}) || match({POSTFIX_EXPR,
+  //     PUNC, PUNC})) {
+  //         reduce(POSTFIX_EXPR);
+  //         return true;
+  //     }
+  //     if (match({POSTFIX_EXPR, PUNC, IDEN}) || match({POSTFIX_EXPR, PUNC,
+  //     PUNC}) ||
+  //         match({POSTFIX_EXPR, PUNC}) || match({POSTFIX_EXPR, PUNC})) {
+  //         reduce(POSTFIX_EXPR);
+  //         return true;
+  //     }
+
+  //     // Unary expressions
+  //     if (match({POSTFIX_EXPR}) || match({PUNC, UNARY_EXPR}) || match({PUNC,
+  //     TYPE_NAME, PUNC, UNARY_EXPR})) {
+  //         reduce(UNARY_EXPR);
+  //         return true;
+  //     }
+
+  //     // Cast expressions
+  //     if (match({UNARY_EXPR}) || match({PUNC, TYPE_NAME, PUNC, CAST_EXPR})) {
+  //         reduce(CAST_EXPR);
+  //         return true;
+  //     }
+
+  //     // Multiplicative expressions
+  //     if (match({CAST_EXPR}) || match({MULT_EXPR, PUNC, CAST_EXPR})) {
+  //         reduce(MULT_EXPR);
+  //         return true;
+  //     }
+
+  //     // Additive expressions
+  //     if (match({MULT_EXPR}) || match({ADD_EXPR, PUNC, MULT_EXPR})) {
+  //         reduce(ADD_EXPR);
+  //         return true;
+  //     }
+
+  //     // Shift expressions
+  //     if (match({ADD_EXPR}) || match({SHIFT_EXPR, PUNC, ADD_EXPR})) {
+  //         reduce(SHIFT_EXPR);
+  //         return true;
+  //     }
+
+  //     // Relational expressions
+  //     if (match({SHIFT_EXPR}) || match({REL_EXPR, PUNC, SHIFT_EXPR})) {
+  //         reduce(REL_EXPR);
+  //         return true;
+  //     }
+
+  //     // Equality expressions
+  //     if (match({REL_EXPR}) || match({EQ_EXPR, PUNC, REL_EXPR})) {
+  //         reduce(EQ_EXPR);
+  //         return true;
+  //     }
+
+  //     // Bitwise AND expressions
+  //     if (match({EQ_EXPR}) || match({AND_EXPR, PUNC, EQ_EXPR})) {
+  //         reduce(AND_EXPR);
+  //         return true;
+  //     }
+
+  //     // Bitwise XOR expressions
+  //     if (match({AND_EXPR}) || match({XOR_EXPR, PUNC, AND_EXPR})) {
+  //         reduce(XOR_EXPR);
+  //         return true;
+  //     }
+
+  //     // Bitwise OR expressions
+  //     if (match({XOR_EXPR}) || match({OR_EXPR, PUNC, XOR_EXPR})) {
+  //         reduce(OR_EXPR);
+  //         return true;
+  //     }
+
+  //     // Logical AND expressions
+  //     if (match({OR_EXPR}) || match({LOG_AND_EXPR, PUNC, OR_EXPR})) {
+  //         reduce(LOG_AND_EXPR);
+  //         return true;
+  //     }
+
+  //     // Logical OR expressions
+  //     if (match({LOG_AND_EXPR}) || match({LOG_OR_EXPR, PUNC, LOG_AND_EXPR}))
+  //     {
+  //         reduce(LOG_OR_EXPR);
+  //         return true;
+  //     }
+
+  //     // Conditional expressions
+  //     if (match({LOG_OR_EXPR}) || match({LOG_OR_EXPR, PUNC, EXPR, PUNC,
+  //     COND_EXPR})) {
+  //         reduce(COND_EXPR);
+  //         return true;
+  //     }
+
+  //     // Assignment expressions
+  //     if (match({COND_EXPR}) || match({UNARY_EXPR, PUNC, ASSIGN_EXPR})) {
+  //         reduce(ASSIGN_EXPR);
+  //         return true;
+  //     }
+
+  //     // Expression
+  //     if (match({ASSIGN_EXPR}) || match({EXPR, PUNC, ASSIGN_EXPR})) {
+  //         reduce(EXPR);
+  //         return true;
+  //     }
+
+  //     return false;
   // }
 
-  // class Parser {
-  // public:
-  //   explicit Parser(TokenStream& tokens) : tokens(tokens) {}
-
-  //   void parse() {
-  //     while (tokens.hasNext()) {
-  //       parse_stack.push(tokens.next());
-  //       reduce();
-  //     }
-  //   }
-
-  // private:
-  //   TokenStream& tokens;
-  //   std::stack<Token> parse_stack;
-
-  //   void reduce() {
-  //     if (parse_stack.size() >= 3) {
-  //       Token third = parse_stack.top();
-  //       parse_stack.pop();
-  //       Token second = parse_stack.top();
-  //       parse_stack.pop();
-  //       Token first = parse_stack.top();
-
-  //       if (isFunctionDefinition(first, second, third)) {
-  //         parseFunction();
-  //       } else if (isVariableDeclaration(first, second, third)) {
-  //         parseVariableAssignment();
-  //       } else {
-  //         parse_stack.push(second);
-  //         parse_stack.push(third);
-  //       }
-  //     }
-  //   }
-
-  //   bool isFunctionDefinition(const Token& first, const Token& second,
-  //                             const Token& third) {
-  //     return first.type == TokenType::KEYWORD &&
-  //            second.type == TokenType::IDENTIFIER &&
-  //            std::get<Punctuator>(third.value.value()) == Punctuator::LPAREN;
-  //   }
-
-  //   bool isVariableDeclaration(const Token& type, const Token& ident,
-  //                              const Token& punctuator) {
-  //     return type.type == TokenType::KEYWORD &&
-  //            ident.type == TokenType::IDENTIFIER &&
-  //            std::get<Punctuator>(punctuator.value.value()) ==
-  //            Punctuator::EQ;
-  //   }
-
-  //   void parseFunction() {
-  //     while (tokens.hasNext()) {
-  //       Token next = tokens.next();
-  //       parse_stack.push(next);
-  //       if (next.value == ")") break;
-  //     }
-  //     Token body_start = tokens.next();
-  //     if (body_start.value != "{") {
-  //       throw std::runtime_error("Expected '{' at start of function body");
-  //     }
-  //     parse_stack.push(body_start);
-  //     parseBlock();
-  //   }
-
-  //   void parseVariableAssignment() {
-  //     Token expr = tokens.next();
-  //     if (expr.type != TokenType::LITERAL &&
-  //         expr.type != TokenType::IDENTIFIER) {
-  //       throw std::runtime_error("Expected a literal or identifier after
-  //       '='");
-  //     }
-  //     parse_stack.push(expr);
-  //     Token semicolon = tokens.next();
-  //     if (semicolon.value != ";") {
-  //       throw std::runtime_error("Expected ';' at end of statement");
-  //     }
-  //     parse_stack.push(semicolon);
-  //   }
-
-  //   void parseBlock() {
-  //     while (tokens.hasNext()) {
-  //       Token next = tokens.next();
-  //       parse_stack.push(next);
-  //       if (next.value == "}") break;
-  //       if (next.type == TokenType::KEYWORD &&
-  //           (next.value == "if" || next.value == "while" ||
-  //            next.value == "for" || next.value == "do" ||
-  //            next.value == "switch")) {
-  //         parseControlStructure();
-  //       }
-  //     }
-  //   }
-
-  //   void parseControlStructure() {
-  //     Token condition_start = tokens.next();
-  //     if (condition_start.value != "(") {
-  //       throw std::runtime_error("Expected '(' after control keyword");
-  //     }
-  //     parse_stack.push(condition_start);
-  //     while (tokens.hasNext()) {
-  //       Token next = tokens.next();
-  //       parse_stack.push(next);
-  //       if (next.value == ")") break;
-  //     }
-  //     Token body_start = tokens.next();
-  //     if (body_start.value == "{") {
-  //       parse_stack.push(body_start);
-  //       parseBlock();
-  //     }
-  //   }
-  // };
 }  // namespace compiler
