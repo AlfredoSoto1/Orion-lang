@@ -19,8 +19,11 @@ namespace compiler {
     ~TokenStream() noexcept;
 
     bool hasNext() const noexcept;
+    bool hasNextNext() const noexcept;
+
     const Token& peek() const noexcept;
     const Token& peekNext() const noexcept;
+    const Token& peekNextNext() const noexcept;
 
     Lexer::LexerResult next();
 

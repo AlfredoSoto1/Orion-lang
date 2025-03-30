@@ -15,7 +15,7 @@ namespace compiler {
    */
   struct Identifier {
     uint64_t uid;
-    std::string name;
+    std::string_view name;
   };
 
   /**
@@ -57,14 +57,13 @@ namespace compiler {
    *
    */
   enum class TokenType {
-    FIRST,
+    UNKNOWN,
     KEYWORD,
     LITERAL,
     IDENTIFIER,
     PUNCTUATOR,
     COMMENT,
     ENDOF,
-    UNKNOWN,
   };
 
   using TokenValue = std::variant<Keyword,     // Keyword

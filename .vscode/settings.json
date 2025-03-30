@@ -67,6 +67,10 @@
     "unordered_map": "cpp",
     "expected": "cpp",
     "string_view": "cpp",
-    "stack": "cpp"
+    "stack": "cpp",
+    "deque": "cpp",
+    "functional": "cpp",
+    "ranges": "cpp",
+    "span": "cpp"
   }
 }

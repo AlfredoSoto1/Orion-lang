@@ -3,80 +3,173 @@
 
 namespace compiler {
 
-  Parser::Parser(TokenStream& tokens) noexcept : tokens(tokens) {}
+  Parser::Parser(TokenStream& tokens) noexcept : tokens(tokens), ast_stack() {}
 
   void Parser::parse() {
-    while (tokens.hasNext()) {
-      // Push to stack the next token
-      parse_stack.push(tokens.next());
+    // Repeat until stack is 1 and all tokens are consumed
+    while (ast_stack.size() > 1 || tokens.hasNext()) {
+      // Check the top of the ast_stack, it will let us know which grammar rule
+      // we are currently applying.
 
-      // check if the current state is reducible.
-      // To know if it is reducible, it needs to check its punctuators.
-      // for example, if we hit '(' that means that its either a function call
-      // or a function declaration. We know that its a function declaration
-      // because it has to tokens prior a TypeSpecifier Identifier '('. This
-      // means that it can deduce that its a function delcaration, meaning that
-      // its expecting function parameters. Then, parameters are given as
-      // Typespecifier identifier, ....
-
-      if (parse_stack.size() >= 3) {
-        Token third_from_top = parse_stack.at(
-            parse_stack.size() - 3);  // The third token from the top
-        Token second_from_top = parse_stack.at(
-            parse_stack.size() - 2);     // The second token from the top
-        Token top = parse_stack.back();  // The most recent token
-
-        if (third_from_top.type == TokenType::KEYWORD &&
-            second_from_top.type == TokenType::IDENTIFIER &&
-            top.type == TokenType::PUNCTUATOR &&
-            std::get<Punctuator>(top.value.value()) == Punctuator::LPAREN) {
-          // We have encountered a potential function declaration
-          // Now, we expect function parameters
-          // parse_function_parameters();
-        }
+      // Check if the detected grammar allows a reduction
+      if (isReducible()) {
+        applyReduction();
+      } else {
+        // If we can't reduce, shift the next token into the AST stack
+        ast_stack.push(ASTNode{GrammarType::UNFINISHED, tokens.peek()});
+        tokens.next();  // Resolve lexer error
       }
     }
   }
 
   bool Parser::reduce() {
-    if (!isReducible()) return false;
+    // Take the AST and reduce it to a single node.
+    // This gets pushed to the ast_stack and marked
+    // as unfinished if the AST is not completed.
 
-    // Apply the reduction rule
-    applyReduction();
-    return true;
+    // If the AST can be built completely, apply a
+    // reduction and push it to the stack.
   }
 
   bool Parser::isReducible() {
-    // Define the patterns we want to reduce
-    if (parse_stack.size() < 3) return false;
-
-    // For example: reducing a return expression like "return expr;"
-    Token& top = parse_stack.top();
-    if (top.type == TokenType::KEYWORD &&
-        std::get<Keyword>(top.value.value()) == Keyword::RETURN) {
-      return true;
-    }
-
-    return false;
+    // Check if the currenct set of tokens match to a grammar.
   }
 
   void Parser::applyReduction() {
-    // Apply a reduction rule based on the top of the stack
-    Token top = parse_stack.top();
-    parse_stack.pop();
-
-    // Example: If "return" is at the top, reduce it to a statement
-    if (top.type == TokenType::KEYWORD &&
-        std::get<Keyword>(top.value.value()) == Keyword::RETURN) {
-      Token statement = {TokenType::PUNCTUATOR, {}};
-      parse_stack.push(statement);
-    }
+    // Combine multiple AST from stack and push it back to stack.
   }
 
-  bool Parser::isTerminal(const Token& token) {
-    // A terminal is a token that we don't reduce further, e.g., identifiers,
-    // literals
-    return token.type == TokenType::LITERAL ||
-           token.type == TokenType::IDENTIFIER;
-  }
+  // std::shared_ptr<ASTNode> makeASTLeaf(const compiler::Token& token) {
+  //   // Here, we decide based on token type.
+  //   // For example, an identifier or literal is a leaf.
+  //   switch (token.type) {
+  //     case compiler::TokenType::IDENTIFIER:
+  //       return std::make_shared<ASTNode>(
+  //           NodeType::IDENTIFIER,
+  //           std::get<compiler::Identifier>(token.value.value()).name);
+  //     case compiler::TokenType::LITERAL:
+  //       // For literal, convert to string (this is simplistic)
+  //       return std::make_shared<ASTNode>(NodeType::LITERAL, "literal");
+  //     case compiler::TokenType::KEYWORD:
+  //       // Keywords can be leaf nodes too.
+  //       // (You may need to convert the keyword to a string.)
+  //       return std::make_shared<ASTNode>(NodeType::IDENTIFIER, "keyword");
+  //     case compiler::TokenType::PUNCTUATOR:
+  //       // Punctuators may be used in operators.
+  //       return std::make_shared<ASTNode>(NodeType::PUNCTUATOR, "punctuator");
+  //     default:
+  //       return std::make_shared<ASTNode>(NodeType::IDENTIFIER, "unknown");
+  //   }
+  // }
+
+  // class Parser {
+  // public:
+  //   explicit Parser(TokenStream& tokens) : tokens(tokens) {}
+
+  //   void parse() {
+  //     while (tokens.hasNext()) {
+  //       parse_stack.push(tokens.next());
+  //       reduce();
+  //     }
+  //   }
+
+  // private:
+  //   TokenStream& tokens;
+  //   std::stack<Token> parse_stack;
+
+  //   void reduce() {
+  //     if (parse_stack.size() >= 3) {
+  //       Token third = parse_stack.top();
+  //       parse_stack.pop();
+  //       Token second = parse_stack.top();
+  //       parse_stack.pop();
+  //       Token first = parse_stack.top();
+
+  //       if (isFunctionDefinition(first, second, third)) {
+  //         parseFunction();
+  //       } else if (isVariableDeclaration(first, second, third)) {
+  //         parseVariableAssignment();
+  //       } else {
+  //         parse_stack.push(second);
+  //         parse_stack.push(third);
+  //       }
+  //     }
+  //   }
+
+  //   bool isFunctionDefinition(const Token& first, const Token& second,
+  //                             const Token& third) {
+  //     return first.type == TokenType::KEYWORD &&
+  //            second.type == TokenType::IDENTIFIER &&
+  //            std::get<Punctuator>(third.value.value()) == Punctuator::LPAREN;
+  //   }
+
+  //   bool isVariableDeclaration(const Token& type, const Token& ident,
+  //                              const Token& punctuator) {
+  //     return type.type == TokenType::KEYWORD &&
+  //            ident.type == TokenType::IDENTIFIER &&
+  //            std::get<Punctuator>(punctuator.value.value()) ==
+  //            Punctuator::EQ;
+  //   }
+
+  //   void parseFunction() {
+  //     while (tokens.hasNext()) {
+  //       Token next = tokens.next();
+  //       parse_stack.push(next);
+  //       if (next.value == ")") break;
+  //     }
+  //     Token body_start = tokens.next();
+  //     if (body_start.value != "{") {
+  //       throw std::runtime_error("Expected '{' at start of function body");
+  //     }
+  //     parse_stack.push(body_start);
+  //     parseBlock();
+  //   }
+
+  //   void parseVariableAssignment() {
+  //     Token expr = tokens.next();
+  //     if (expr.type != TokenType::LITERAL &&
+  //         expr.type != TokenType::IDENTIFIER) {
+  //       throw std::runtime_error("Expected a literal or identifier after
+  //       '='");
+  //     }
+  //     parse_stack.push(expr);
+  //     Token semicolon = tokens.next();
+  //     if (semicolon.value != ";") {
+  //       throw std::runtime_error("Expected ';' at end of statement");
+  //     }
+  //     parse_stack.push(semicolon);
+  //   }
+
+  //   void parseBlock() {
+  //     while (tokens.hasNext()) {
+  //       Token next = tokens.next();
+  //       parse_stack.push(next);
+  //       if (next.value == "}") break;
+  //       if (next.type == TokenType::KEYWORD &&
+  //           (next.value == "if" || next.value == "while" ||
+  //            next.value == "for" || next.value == "do" ||
+  //            next.value == "switch")) {
+  //         parseControlStructure();
+  //       }
+  //     }
+  //   }
+
+  //   void parseControlStructure() {
+  //     Token condition_start = tokens.next();
+  //     if (condition_start.value != "(") {
+  //       throw std::runtime_error("Expected '(' after control keyword");
+  //     }
+  //     parse_stack.push(condition_start);
+  //     while (tokens.hasNext()) {
+  //       Token next = tokens.next();
+  //       parse_stack.push(next);
+  //       if (next.value == ")") break;
+  //     }
+  //     Token body_start = tokens.next();
+  //     if (body_start.value == "{") {
+  //       parse_stack.push(body_start);
+  //       parseBlock();
+  //     }
+  //   }
+  // };
 }  // namespace compiler

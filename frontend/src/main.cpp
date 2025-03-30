@@ -137,9 +137,9 @@ int main() {
 
   testTokenStream(R"(
     int a = 5;
-    int b = 10; // Another variable
+    int b = add(a, b); // Another variable
 
-    void main() {
+    void main(int a) {
       a += b * 20;
     }
   )",
