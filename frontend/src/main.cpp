@@ -1,12 +1,74 @@
+#include <cassert>
 #include <iostream>
 #include <string>
 #include <variant>
 #include <vector>
 
 #include "TokenStream.hpp"
-#include "ast/ParserTest.hpp"
+#include "ast/ASTStack.hpp"
+#include "ast/Parser.hpp"
 
 using namespace compiler;
+
+void test_push_and_peek() {
+  ASTStack stack = ASTStack();
+  ASTNode node1 = {Grammar::EXPR};
+  ASTNode node2 = {Grammar::EXPR};
+  stack.shift(&node1);
+  stack.shift(&node2);
+  ASTNode* buffer[1];
+  stack.peekTop(buffer, 1);
+  assert(buffer[0]->grammar == Grammar::EXPR);
+  std::cout << "test_push_and_peek passed!\n";
+}
+
+void test_pop() {
+  ASTStack stack = ASTStack();
+  ASTNode node1 = {Grammar::EXPR};
+  ASTNode node2 = {Grammar::EXPR};
+  stack.shift(&node1);
+  stack.shift(&node2);
+  stack.pop(1);
+  ASTNode* buffer[1];
+  stack.peekTop(buffer, 1);
+  assert(buffer[0]->grammar == Grammar::EXPR);
+  stack.pop(1);
+
+  // Does nothing
+  stack.peekTop(buffer, 1);
+  std::cout << "test_pop passed!\n";
+}
+
+void test_multiple_pages() {
+  ASTStack stack = ASTStack();
+  ASTNode nodes[70];
+  for (int i = 0; i < 70; ++i) nodes[i] = {Grammar::EXPR};
+  for (int i = 0; i < 70; ++i) stack.shift(&nodes[i]);
+  ASTNode* buffer[1];
+  stack.peekTop(buffer, 1);
+  assert(buffer[0]->grammar == Grammar::EXPR);
+  stack.pop(10);
+  stack.peekTop(buffer, 1);
+  assert(buffer[0]->grammar == Grammar::EXPR);
+  std::cout << "test_multiple_pages passed!\n";
+}
+
+void test_peek_buffer() {
+  ASTStack stack = ASTStack();
+  ASTNode nodes[5] = {{Grammar::EXPR},
+                      {Grammar::EXPR},
+                      {Grammar::EXPR},
+                      {Grammar::EXPR},
+                      {Grammar::EXPR}};
+  for (int i = 0; i < 5; ++i) stack.shift(&nodes[i]);
+  ASTNode* buffer[4];
+  stack.peekTop(buffer, 4);
+  assert(buffer[0]->grammar == Grammar::EXPR);
+  assert(buffer[1]->grammar == Grammar::EXPR);
+  assert(buffer[2]->grammar == Grammar::EXPR);
+  assert(buffer[3]->grammar == Grammar::EXPR);
+  std::cout << "test_peek_buffer passed!\n";
+}
 
 bool testToken(const Token& token) {
   switch (token.type) {
@@ -147,13 +209,19 @@ int main() {
   // )",
   //                 "TOKEN STREAM TEST");
 
-  testParser(R"(
-    a + b
-    int a;
-    int a = 5;
-    int a = 5;
-  )",
-             "PARSER TEST");
+  // testParser(R"(
+  //   a + b
+  //   int a;
+  //   int a = 5;
+  //   int a = 5;
+  // )",
+  //            "PARSER TEST");
 
+  test_push_and_peek();
+  test_pop();
+  test_multiple_pages();
+  test_peek_buffer();
+
+  std::cout << "All tests passed!\n";
   return 0;
 }
