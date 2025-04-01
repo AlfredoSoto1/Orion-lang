@@ -5,7 +5,14 @@
 
 namespace compiler {
 
-  Parser::Parser(TokenStream& tokens) noexcept : tokens(tokens), ast_stack() {}
+  Parser::Parser(TokenStream& tokens) noexcept : tokens(tokens), ast_stack() {
+    program_buffer = new ASTNode*[32];  // Temp val
+  }
+
+  Parser::~Parser() noexcept {
+    // This needs to be in ASTProgram
+    delete[] program_buffer;
+  }
 
   void Parser::parse() {
     // Repeat until stack is 1 and all tokens are consumed
@@ -63,14 +70,14 @@ namespace compiler {
     }
 
     // Push the token with the determined grammar type onto the stack
-    ast_stack.push(ASTNode{grammar, tok});
+    ast_stack.shift(ASTNode{grammar, tok});
     tokens.next();
   }
 
   bool Parser::tryReduce() {
     using enum Grammar;
 
-    if (ast_stack.empty()) {
+    if (ast_stack.isEmpty()) {
       return false;
     }
 

@@ -4,6 +4,7 @@
 #include <stack>
 
 #include "ASTProgram.hpp"
+#include "ASTStack.hpp"
 #include "TokenStream.hpp"
 
 // TEMP
@@ -20,12 +21,16 @@ namespace compiler {
 
   public:
     explicit Parser(TokenStream& tokens) noexcept;
+    ~Parser() noexcept;
 
     void parse();
 
   private:
     TokenStream& tokens;
-    std::stack<ASTNode> ast_stack;
+    ASTStack ast_stack;
+
+    // This should be ASTProgram
+    ASTNode** program_buffer;
 
   private:
     void shift();

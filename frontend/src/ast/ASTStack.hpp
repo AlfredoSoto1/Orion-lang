@@ -1,8 +1,5 @@
 #pragma once
 
-#include <array>
-#include <memory>
-
 #include "ASTProgram.hpp"
 
 namespace compiler {
@@ -35,6 +32,20 @@ namespace compiler {
      *
      */
     void peekTop(ASTNode** buffer, uint8_t size);
+
+    /**
+     * @brief Size of the stack being in use
+     *
+     * @return size_t
+     */
+    size_t size() const;
+
+    /**
+     * @brief Checks if the stack has any nodes.
+     *
+     * @return true if empty false otherwise
+     */
+    bool isEmpty() const;
 
   private:
     /**

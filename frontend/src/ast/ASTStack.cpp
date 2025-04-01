@@ -2,6 +2,12 @@
 
 namespace compiler {
 
+  size_t max(const size_t& a, const size_t& b) {
+    // Local implementation to avoid including
+    // something huge and unecessary
+    return (a < b) ? b : a;
+  }
+
   ASTStack::ASTStack() noexcept : top_index(0), page_count(0), head(nullptr) {}
 
   ASTStack::~ASTStack() noexcept { clear(); }
@@ -43,6 +49,12 @@ namespace compiler {
       index = current ? Page::PAGE_SIZE : 0;
     }
   }
+
+  size_t ASTStack::size() const {
+    return max(0, (page_count - 1) * Page::PAGE_SIZE) + top_index;
+  }
+
+  bool ASTStack::isEmpty() const { return !head && page_count == 0; }
 
   void ASTStack::addPage() {
     // Create a new page and make head reference it.
