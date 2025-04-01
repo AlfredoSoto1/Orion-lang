@@ -8,6 +8,7 @@ namespace compiler {
 
   void ASTStack::shift(ASTNode* node) {
     if (!head || top_index >= Page::PAGE_SIZE) {
+      // Add a new page when overflows
       addPage();
     }
     head->nodes[top_index++] = node;
@@ -19,7 +20,7 @@ namespace compiler {
       // and continue popping.
       if (top_index == 0) {
         if (!head || page_count == 0) {
-          // throw std::runtime_error("ASTStack underflow");
+          return;  // do nothing
         }
         removePage();
       }
