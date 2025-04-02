@@ -7,21 +7,7 @@ namespace compiler {
 
   ASTProgram::~ASTProgram() noexcept { clear(); }
 
-  void ASTProgram::emplace(const ASTNode&& node) {
-    if (!head || top_index >= Page::PAGE_SIZE) {
-      // Add a new page when overflows
-      addPage();
-    }
-
-    // Emplace node into page slot
-    ASTNode* ref = new (&head->nodes[top_index++]) ASTNode(std::move(node));
-    ref->branches.emplace_back(top_index++);
-    node_count++;
-  }
-
-  // const ASTNode& ASTProgram::head() const {
-
-  // }
+  const ASTNode& ASTProgram::start() const {}
 
   size_t ASTProgram::size() const { return node_count; }
 

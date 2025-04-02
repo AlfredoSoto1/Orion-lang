@@ -1,6 +1,7 @@
 #pragma once
 
 #include <expected>
+#include <memory>
 #include <stack>
 
 #include "ASTProgram.hpp"
@@ -21,16 +22,14 @@ namespace compiler {
 
   public:
     explicit Parser(TokenStream& tokens) noexcept;
-    ~Parser() noexcept;
+    ~Parser() noexcept = default;
 
     void parse();
 
   private:
     TokenStream& tokens;
     ASTStack ast_stack;
-
-    // This should be ASTProgram
-    ASTNode** program_buffer;
+    std::unique_ptr<ASTProgram> ast_program;
 
   private:
     void shift();

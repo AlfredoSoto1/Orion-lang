@@ -28,11 +28,33 @@ namespace compiler {
     explicit ASTProgram() noexcept;
     ~ASTProgram() noexcept;
 
-    void emplace(const ASTNode&& node);
-
     const ASTNode& start() const;
 
+    /**
+     * @brief Size of the program
+     *
+     * @return size_t
+     */
     size_t size() const;
+
+    /**
+     * @brief Emplace a node at the top of the program
+     *
+     * @tparam Args
+     * @param args
+     */
+    template <typename... Args>
+    ASTNode* emplace(Args&&... args) {
+      if (!head || top_index >= Page::PAGE_SIZE) {
+        // Add a new page when overflows
+        addPage();
+      }
+
+      // Emplace node into page slot
+      node_count++;
+      return new (&head->nodes[top_index++])
+          ASTNode(std::forward<Args>(args)...);
+    }
 
   private:
     /**
@@ -41,7 +63,7 @@ namespace compiler {
      */
     struct Page {
       static constexpr uint8_t PAGE_SIZE = 64;
-      ASTNode* nodes[PAGE_SIZE]{};
+      ASTNode nodes[PAGE_SIZE]{};
       Page* prev = nullptr;
     };
 

@@ -28,7 +28,8 @@ namespace compiler {
 
     /**
      * @brief Peeks the first size elements in the stack
-     *        and stores it in buffer.
+     *        and stores it in buffer. The first element
+     *        of the buffer is the top of the stack.
      *
      */
     void peekTop(ASTNode** buffer, uint8_t size);
