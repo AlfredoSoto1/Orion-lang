@@ -15,42 +15,46 @@ namespace compiler {
    */
   struct ASTNode {
     Grammar grammar;
-    std::variant<Token, std::vector<ASTNode>> value;
+    Token token;
+    std::vector<uint64_t> branches;
   };
 
   class ASTProgram final {
-    // public:
-    //   /**
-    //    * @brief Construct a new ASTProgram object
-    //    *
-    //    */
-    //   explicit ASTProgram() noexcept;
-    //   ~ASTProgram() noexcept;
+  public:
+    /**
+     * @brief Construct a new ASTProgram object
+     *
+     */
+    explicit ASTProgram() noexcept;
+    ~ASTProgram() noexcept;
 
-    //   void head();
+    void emplace(const ASTNode&& node);
 
-    //   size_t size() const;
+    const ASTNode& start() const;
 
-    // private:
-    //   /**
-    //    * @brief
-    //    *
-    //    */
-    //   struct Page {
-    //     static constexpr uint8_t PAGE_SIZE = 64;
-    //     ASTNode* nodes[PAGE_SIZE]{};
-    //     Page* prev = nullptr;
-    //   };
+    size_t size() const;
 
-    // private:
-    //   uint8_t top_index;
-    //   uint64_t page_count;
-    //   Page* head;
+  private:
+    /**
+     * @brief
+     *
+     */
+    struct Page {
+      static constexpr uint8_t PAGE_SIZE = 64;
+      ASTNode* nodes[PAGE_SIZE]{};
+      Page* prev = nullptr;
+    };
 
-    // private:
-    //   void clear();
-    //   void addPage();
-    //   void removePage();
+  private:
+    uint8_t top_index;
+    uint64_t page_count;
+    uint64_t node_count;
+    Page* head;
+
+  private:
+    void clear();
+    void addPage();
+    void removePage();
   };
 
   enum class Grammar : uint64_t {

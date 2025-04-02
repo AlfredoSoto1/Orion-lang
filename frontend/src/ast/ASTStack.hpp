@@ -61,6 +61,7 @@ namespace compiler {
   private:
     uint8_t top_index;
     uint64_t page_count;
+    uint64_t stack_size;
     Page* head;
 
   private:

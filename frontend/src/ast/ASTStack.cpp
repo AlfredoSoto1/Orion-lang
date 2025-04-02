@@ -2,13 +2,8 @@
 
 namespace compiler {
 
-  size_t max(const size_t& a, const size_t& b) {
-    // Local implementation to avoid including
-    // something huge and unecessary
-    return (a < b) ? b : a;
-  }
-
-  ASTStack::ASTStack() noexcept : top_index(0), page_count(0), head(nullptr) {}
+  ASTStack::ASTStack() noexcept
+      : top_index(0), page_count(0), stack_size(0), head(nullptr) {}
 
   ASTStack::~ASTStack() noexcept { clear(); }
 
@@ -18,6 +13,7 @@ namespace compiler {
       addPage();
     }
     head->nodes[top_index++] = node;
+    stack_size++;
   }
 
   void ASTStack::pop(uint8_t stack_ptr) {
@@ -31,6 +27,7 @@ namespace compiler {
         removePage();
       }
       --top_index;
+      stack_size--;
     }
   }
 
@@ -50,11 +47,9 @@ namespace compiler {
     }
   }
 
-  size_t ASTStack::size() const {
-    return max(0, (page_count - 1) * Page::PAGE_SIZE) + top_index;
-  }
+  size_t ASTStack::size() const { return stack_size; }
 
-  bool ASTStack::isEmpty() const { return !head && page_count == 0; }
+  bool ASTStack::isEmpty() const { return stack_size == 0; }
 
   void ASTStack::addPage() {
     // Create a new page and make head reference it.

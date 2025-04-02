@@ -71,6 +71,7 @@
     "deque": "cpp",
     "functional": "cpp",
     "ranges": "cpp",
-    "span": "cpp"
+    "span": "cpp",
+    "algorithm": "cpp"
   }
 }
