@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ASTProgram.hpp"
+#include "ASTArena.hpp"
 
 namespace compiler {
 

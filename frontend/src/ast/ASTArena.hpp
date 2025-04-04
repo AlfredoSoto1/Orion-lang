@@ -19,51 +19,38 @@ namespace compiler {
     std::vector<uint64_t> branches;
   };
 
-  class ASTProgram final {
+  class ASTArena final {
   public:
-    /**
-     * @brief Construct a new ASTProgram object
-     *
-     */
-    explicit ASTProgram() noexcept;
-    ~ASTProgram() noexcept;
+    explicit ASTArena() noexcept;
+    ~ASTArena() noexcept;
 
-    const ASTNode& start() const;
+    size_t used() const;
+    size_t available() const;
 
-    /**
-     * @brief Size of the program
-     *
-     * @return size_t
-     */
-    size_t size() const;
-
-    /**
-     * @brief Emplace a node at the top of the program
-     *
-     * @tparam Args
-     * @param args
-     */
     template <typename... Args>
-    ASTNode* emplace(Args&&... args) {
+    ASTNode* allocate(Args&&... args) {
       if (!head || top_index >= Page::PAGE_SIZE) {
         // Add a new page when overflows
         addPage();
       }
-
       // Emplace node into page slot
       node_count++;
-      return new (&head->nodes[top_index++])
-          ASTNode(std::forward<Args>(args)...);
+      ASTNodeBlock* block = new (&head->nodes[top_index++])
+          ASTNodeBlock{{std::forward<Args>(args)...}, false};
+      return &block->data;
     }
 
+    void free(ASTNode* node);
+
   private:
-    /**
-     * @brief
-     *
-     */
+    struct ASTNodeBlock {
+      ASTNode data;
+      bool is_free = true;
+    };
+
     struct Page {
       static constexpr uint8_t PAGE_SIZE = 64;
-      ASTNode nodes[PAGE_SIZE]{};
+      ASTNodeBlock nodes[PAGE_SIZE]{};
       Page* prev = nullptr;
     };
 

@@ -4,7 +4,7 @@
 #include <memory>
 #include <stack>
 
-#include "ASTProgram.hpp"
+#include "ASTArena.hpp"
 #include "ASTStack.hpp"
 #include "TokenStream.hpp"
 
@@ -29,11 +29,13 @@ namespace compiler {
   private:
     TokenStream& tokens;
     ASTStack ast_stack;
-    std::unique_ptr<ASTProgram> ast_program;
+    ASTArena ast_arena;
 
   private:
     void shift();
     bool tryReduce();
+
+    bool match(ASTNode* nodes, Grammar grammar) const;
   };
 }  // namespace compiler
 

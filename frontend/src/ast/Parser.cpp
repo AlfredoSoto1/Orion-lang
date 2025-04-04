@@ -8,9 +8,6 @@ namespace compiler {
   Parser::Parser(TokenStream& tokens) noexcept : tokens(tokens), ast_stack() {}
 
   void Parser::parse() {
-    // Create a unique program
-    ast_program = std::make_unique<ASTProgram>();
-
     // Repeat until stack is 1 and all tokens are consumed
     while (ast_stack.size() > 1 || tokens.hasNext()) {
       // Try to reduce the top of the stack into an expression.
@@ -66,9 +63,12 @@ namespace compiler {
     }
 
     // Push the token with the determined grammar type onto the stack
-    ast_stack.shift(ast_program->emplace(grammar, tok));
+    ASTNode* node = ast_arena.allocate(grammar, tok, std::vector<uint64_t>{});
+    ast_stack.shift(node);
     tokens.next();
   }
+
+  bool match(ASTNode* nodes, Grammar grammar) const {}
 
   bool Parser::tryReduce() {
     using enum Grammar;
