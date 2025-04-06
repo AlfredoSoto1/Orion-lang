@@ -4,7 +4,7 @@
 
 namespace compiler {
 
-  enum class Operator {
+  enum class Operator : uint8_t {
     // Arithmetic operators
     ADD,  // +
     SUB,  // -

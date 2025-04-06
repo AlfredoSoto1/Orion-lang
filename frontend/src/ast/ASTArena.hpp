@@ -34,22 +34,11 @@ namespace compiler {
     /**
      * @brief Allocates a new ASTNode and returns a pointer to it.
      *
-     * @tparam Args
-     * @param args
+     * @param rule
+     * @param content
      * @return ASTNode*
      */
-    template <typename... Args>
-    ASTNode* allocate(Args&&... args) {
-      if (!head || top_index >= Page::PAGE_SIZE) {
-        // Add a new page when overflows
-        addPage();
-      }
-      // Emplace node into page slot
-      node_count++;
-      ASTNodeBlock* block = new (&head->nodes[top_index++])
-          ASTNodeBlock{{std::forward<Args>(args)...}, false};
-      return &block->data;
-    }
+    ASTNode* allocate(const Rule& rule, const ASTNode::Value& content);
 
     /**
      * @brief Frees the given ASTNode.
@@ -60,14 +49,14 @@ namespace compiler {
 
   private:
     struct ASTNodeBlock {
-      ASTNode data;
       bool is_free = true;
+      ASTNode data{};
     };
 
     struct Page {
       static constexpr uint8_t PAGE_SIZE = 64;
-      ASTNodeBlock nodes[PAGE_SIZE]{};
       Page* prev = nullptr;
+      ASTNodeBlock nodes[PAGE_SIZE]{};
     };
 
   private:

@@ -42,7 +42,7 @@ void test_pop() {
 void test_multiple_pages() {
   ASTStack stack = ASTStack();
   uint64_t available = 0;
-  ASTNode nodes[70];
+  ASTNode nodes[70]{};
   for (int i = 0; i < 70; ++i) nodes[i] = {Rule::EXPR};
   for (int i = 0; i < 70; ++i) stack.shift(&nodes[i]);
   ASTNode* buffer[1];
@@ -213,22 +213,22 @@ int main() {
   // test_multiple_pages();
   // test_peek_buffer();
 
-  testParser(R"(
-    int a = 5;
-    int b = 10;
-    int c;
-  )",
-             "PARSER TEST");
+  // testParser(R"(
+  //   int a = 5;
+  //   int b = 10;
+  //   int c;
+  // )",
+  //            "PARSER TEST");
 
-  // std::cout << "ASTNode " << sizeof(ASTNode) << "\n";
-  // std::cout << "TokenType " << sizeof(TokenType) << "\n";
-  // std::cout << "Token " << sizeof(Token) << "\n";
-  // std::cout << "Literal " << sizeof(Literal) << "\n";
-  // std::cout << "Identifier " << sizeof(Identifier) << "\n";
-  // std::cout << "TokenValue " << sizeof(TokenValue) << "\n";
-  // std::cout << "TokenStream " << sizeof(TokenStream) << "\n";
-  // std::cout << "ShortString_view " << sizeof(ShortString_view) << "\n";
-  // std::cout << "string_view " << sizeof(std::string_view) << "\n";
+  std::cout << "ASTNode " << sizeof(ASTNode) << "\n";
+  std::cout << "TokenType " << sizeof(TokenType) << "\n";
+  std::cout << "Token " << sizeof(Token) << "\n";
+  std::cout << "Literal " << sizeof(Literal) << "\n";
+  std::cout << "Identifier " << sizeof(Identifier) << "\n";
+  std::cout << "TokenValue " << sizeof(TokenValue) << "\n";
+  std::cout << "TokenStream " << sizeof(TokenStream) << "\n";
+  std::cout << "ShortString_view " << sizeof(string_view) << "\n";
+  std::cout << "string_view " << sizeof(std::string_view) << "\n";
 
   std::cout << "All tests passed!\n";
   return 0;

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace compiler {
 
-  enum class Punctuator {
+  enum class Punctuator : uint8_t {
     UNKNOWN = 0,
     AT,              // @
     HASH,            // #

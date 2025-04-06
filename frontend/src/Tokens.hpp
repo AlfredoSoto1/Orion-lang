@@ -5,11 +5,12 @@
 #include <variant>
 
 #include "Keyword.hpp"
+#include "Operators.hpp"
 #include "Punctuator.hpp"
 
 namespace compiler {
 
-  struct ShortString_view {
+  struct string_view {
     uint32_t start;
     uint32_t end;
   };

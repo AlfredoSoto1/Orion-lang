@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
+
+#include "Tokens.hpp"
 
 namespace compiler {
 
@@ -64,6 +67,9 @@ namespace compiler {
     ID_LPAREN_ARGS_RPAREN,
     LPAREN_EXPR_RPAREN,
 
+    // Volatile Expressions : These are not in the grammar but are used for
+    // building the AST.
+    KEYWORD,
     MAX,
   };
 
@@ -73,7 +79,18 @@ namespace compiler {
    */
   struct ASTNode {
     Rule rule;
-    uint64_t value;
+    union Value {
+      EndOfFile eof;
+      Operator op;
+      Punctuator punc;
+      Keyword keyword;
+      uint64_t integer;
+      double floating;
+      char character;
+      bool boolean;
+      std::string_view string;
+      std::string_view identifier;
+    } value;
     ASTNode* branch[4]{};
   };
 }  // namespace compiler

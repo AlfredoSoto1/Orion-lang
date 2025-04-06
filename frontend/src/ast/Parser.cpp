@@ -30,11 +30,15 @@ namespace compiler {
 
     // Determine the appropriate Rule based on the token type
     Rule rule = Rule::UNKNOWN;
+    ASTNode::Value value{};
 
+    // TODO: Handle the cases to determine the rule and value
+    // This is a simplified example; you may need to adjust it based on your
+    // grammar and AST structure.
     switch (tok.type) {
       case TokenType::KEYWORD:
-        rule = Rule::ID;
-        // rule = Rule::KEYWORD;
+        rule = Rule::KEYWORD;
+        value.keyword = tok.value.keyword;
         break;
       case TokenType::IDENTIFIER:
         rule = Rule::ID;
@@ -47,12 +51,11 @@ namespace compiler {
         break;
       default:
         rule = Rule::UNKNOWN;  // THIS SHOULD NEVER HAPPEN
-        break;
+        return;                // Throw error HERE
     }
-
     // Push the token with the determined grammar type onto the stack
-    // ASTNode* node = ast_arena.allocate(rule, tok, std::vector<uint64_t>{});
-    // ast_stack.shift(node);
+    ASTNode* node = ast_arena.allocate(rule, value);
+    ast_stack.shift(node);
     tokens.next();
   }
 

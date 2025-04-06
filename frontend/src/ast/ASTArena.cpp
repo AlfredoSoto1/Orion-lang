@@ -10,6 +10,18 @@ namespace compiler {
   size_t ASTArena::used() const { return node_count; }
   size_t ASTArena::available() const { return page_count * Page::PAGE_SIZE; }
 
+  ASTNode* ASTArena::allocate(const Rule& rule, const ASTNode::Value& content) {
+    if (!head || top_index >= Page::PAGE_SIZE) {
+      // Add a new page when overflows
+      addPage();
+    }
+    // Emplace node into page slot
+    node_count++;
+    ASTNodeBlock* block =
+        new (&head->nodes[top_index++]) ASTNodeBlock{false, {rule, content}};
+    return &block->data;
+  }
+
   void ASTArena::free(ASTNode* node) {
     // The address of the node must be the same as the address of the block
     // in the page. This is a bit of a hack, but it works because we control the
