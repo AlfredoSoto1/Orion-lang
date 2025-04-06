@@ -9,6 +9,11 @@
 
 namespace compiler {
 
+  struct ShortString_view {
+    uint32_t start;
+    uint32_t end;
+  };
+
   /**
    * @brief Represents an identifier in the source code.
    *
@@ -23,20 +28,8 @@ namespace compiler {
    *
    */
   struct EndOfFile {
-    uint64_t line;
-    uint64_t column;
-    std::string path;
-  };
-
-  /**
-   * @brief
-   *
-   */
-  enum class LiteralType {
-    INTEGER,
-    FLOAT,
-    CHAR,
-    STRING,
+    uint32_t line;
+    uint32_t column;
   };
 
   /**
@@ -44,33 +37,51 @@ namespace compiler {
    *
    */
   struct Literal {
-    LiteralType type;
-    std::variant<char,         // Single Byte character
-                 double,       // Double precision floating point
-                 uint64_t,     // Unsigned 64-bit integer
-                 std::string>  // String
-        value;
+    // LiteralType type;
+    union {
+      uint64_t integer;         // Unsigned 64-bit integer
+      double floating;          // Double precision floating point
+      char character;           // Single Byte character
+      bool boolean;             // Boolean
+      std::string_view string;  // String
+    };
   };
 
   /**
    * @brief
    *
    */
-  enum class TokenType {
-    UNKNOWN,
+  enum class TokenType : uint8_t {
+    UNKNOWN = 0,
     KEYWORD,
-    LITERAL,
     IDENTIFIER,
     PUNCTUATOR,
+    CHAR_LITERAL,
+    STRING_LITERAL,
+    BOOLEAN_LITERAL,
+    INTEGER_LITERAL,
+    FLOATING_LITERAL,
     COMMENT,
     ENDOF,
   };
 
-  using TokenValue = std::variant<Keyword,     // Keyword
-                                  Literal,     // Literal
-                                  Identifier,  // Identifier
-                                  Punctuator,  // Punctuator
-                                  EndOfFile>;  // End of file
+  /**
+   * @brief Represents a token value.
+   *
+   * This is a variant type that can hold different types of values
+   * that can be associated with a token, such as keywords, literals,
+   * identifiers, punctuators, and end-of-file markers.
+   *
+   */
+  struct TokenValue {
+    union {
+      Keyword keyword;        // Keyword
+      Literal literal;        // Literal
+      Identifier identifier;  // Identifier
+      Punctuator punctuator;  // Punctuator
+      EndOfFile eof;          // End of file
+    };
+  };
 
   /**
    * @brief Represents a token in the source code.
@@ -78,7 +89,7 @@ namespace compiler {
    */
   struct Token {
     TokenType type;
-    std::optional<TokenValue> value;
+    TokenValue value;
   };
 
   /**

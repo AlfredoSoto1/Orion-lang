@@ -5,6 +5,7 @@
 namespace compiler {
 
   enum class Punctuator {
+    UNKNOWN = 0,
     AT,              // @
     HASH,            // #
     DOLLAR,          // $
@@ -59,7 +60,6 @@ namespace compiler {
     LTE,             // <=
     GTE,             // >=
     QUESTION,        // ?
-    UNKNOWN,
   };
 
   class PunctuatorHandler {

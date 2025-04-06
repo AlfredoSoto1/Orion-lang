@@ -13,7 +13,7 @@ namespace compiler {
     }
 
     // Separate a new token buffer
-    buffer = new Token[buffer_size];
+    buffer = new Token[buffer_size]{};
 
     // Pre-fill the buffer with the first N amount of tokens.
     do {
@@ -75,21 +75,10 @@ namespace compiler {
     return buffer[(bpos + 1) % buffer_size];
   }
 
-  const Token& TokenStream::peekNextNext() const noexcept {
-    // Return the next token being pointed in buffer.
-    return buffer[(bpos + 2) % buffer_size];
-  }
-
   bool TokenStream::hasNext() const noexcept {
     // Checks if the current token is ENDOF. This means that
     // there are no more tokens after.
     return buffer[bpos % buffer_size].type != TokenType::ENDOF;
   }
 
-  bool TokenStream::hasNextNext() const noexcept {
-    // Checks if the current token is ENDOF. This means that
-    // there are no more tokens after.
-    return hasNext() &&
-           buffer[(bpos + 1) % buffer_size].type != TokenType::ENDOF;
-  }
 }  // namespace compiler

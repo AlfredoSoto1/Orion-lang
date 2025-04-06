@@ -72,6 +72,7 @@
     "functional": "cpp",
     "ranges": "cpp",
     "span": "cpp",
-    "algorithm": "cpp"
+    "algorithm": "cpp",
+    "cassert": "cpp"
   }
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ASTArena.hpp"
+#include "ASTRules.hpp"
 
 namespace compiler {
 
@@ -31,8 +32,11 @@ namespace compiler {
      *        and stores it in buffer. The first element
      *        of the buffer is the top of the stack.
      *
+     * @param buffer
+     * @param available
+     * @param size
      */
-    void peekTop(ASTNode** buffer, uint8_t size);
+    void peekTop(ASTNode** buffer, uint64_t* available, uint8_t size);
 
     /**
      * @brief Size of the stack being in use

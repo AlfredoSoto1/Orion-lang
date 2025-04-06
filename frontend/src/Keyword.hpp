@@ -4,7 +4,8 @@
 
 namespace compiler {
 
-  enum class Keyword {
+  enum class Keyword : uint8_t {
+    UNKNOWN = 0,
     // Control flow & loops
     IF,
     ELSE,

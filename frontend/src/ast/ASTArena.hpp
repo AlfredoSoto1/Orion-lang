@@ -3,30 +3,41 @@
 #include <variant>
 #include <vector>
 
+#include "ASTRules.hpp"
 #include "Tokens.hpp"
 
 namespace compiler {
 
-  enum class Grammar : uint64_t;
-
-  /**
-   * @brief This needs to be an interface
-   *
-   */
-  struct ASTNode {
-    Grammar grammar;
-    Token token;
-    std::vector<uint64_t> branches;
-  };
-
   class ASTArena final {
   public:
+    /**
+     * @brief Construct a new ASTArena object.
+     *
+     */
     explicit ASTArena() noexcept;
     ~ASTArena() noexcept;
 
+    /**
+     * @brief Returns the number of allocated nodes.
+     *
+     * @return size_t
+     */
     size_t used() const;
+
+    /**
+     * @brief Returns the number of available nodes.
+     *
+     * @return size_t
+     */
     size_t available() const;
 
+    /**
+     * @brief Allocates a new ASTNode and returns a pointer to it.
+     *
+     * @tparam Args
+     * @param args
+     * @return ASTNode*
+     */
     template <typename... Args>
     ASTNode* allocate(Args&&... args) {
       if (!head || top_index >= Page::PAGE_SIZE) {
@@ -40,6 +51,11 @@ namespace compiler {
       return &block->data;
     }
 
+    /**
+     * @brief Frees the given ASTNode.
+     *
+     * @param node
+     */
     void free(ASTNode* node);
 
   private:
@@ -64,39 +80,5 @@ namespace compiler {
     void clear();
     void addPage();
     void removePage();
-  };
-
-  enum class Grammar : uint64_t {
-    UNKNOWN = 0,
-    PUNC,
-    EXPR,
-    FACTOR,
-    LITERAL,
-    OPERATOR,
-    TERM,
-    IDENT,
-    LPAREN,
-    RPAREN,
-    KEYWORD,
-
-    // DECLARATION,
-    // FUNCTION,
-    // PARAMETER,
-    // BLOCK,
-    // STATEMENT,
-    // EXPRESSION,
-    // TERM,
-    // IDENTIFIER,
-    // LITERAL,
-    // OPERATOR,
-    // UNFINISHED,
-
-    // UNKNOWN,
-    // KEYWORD,
-    // LITERAL,
-    // IDENTIFIER,
-    // PUNCTUATOR,
-    // COMMENT,
-    // ENDOF,
   };
 }  // namespace compiler

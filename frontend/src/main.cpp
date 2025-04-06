@@ -4,70 +4,68 @@
 #include <variant>
 #include <vector>
 
-#include "TokenStream.hpp"
-#include "ast/ASTProgram.hpp"
-#include "ast/ASTStack.hpp"
-// #include "ast/Parser.hpp"
+#include "ast/Parser.hpp"
 
 using namespace compiler;
 
 void test_push_and_peek() {
   ASTStack stack = ASTStack();
-  ASTNode node1 = {Grammar::EXPR};
-  ASTNode node2 = {Grammar::EXPR};
+  ASTNode node1 = {Rule::EXPR};
+  ASTNode node2 = {Rule::EXPR};
   stack.shift(&node1);
   stack.shift(&node2);
+  uint64_t available = 0;
   ASTNode* buffer[1];
-  stack.peekTop(buffer, 1);
-  assert(buffer[0]->grammar == Grammar::EXPR);
+  stack.peekTop(buffer, &available, 1);
+  assert(buffer[0]->rule == Rule::EXPR);
   std::cout << "test_push_and_peek passed!\n";
 }
 
 void test_pop() {
   ASTStack stack = ASTStack();
-  ASTNode node1 = {Grammar::EXPR};
-  ASTNode node2 = {Grammar::EXPR};
+  ASTNode node1 = {Rule::EXPR};
+  ASTNode node2 = {Rule::EXPR};
   stack.shift(&node1);
   stack.shift(&node2);
   stack.pop(1);
+  uint64_t available = 0;
   ASTNode* buffer[1];
-  stack.peekTop(buffer, 1);
-  assert(buffer[0]->grammar == Grammar::EXPR);
+  stack.peekTop(buffer, &available, 1);
+  assert(buffer[0]->rule == Rule::EXPR);
   stack.pop(1);
 
   // Does nothing
-  stack.peekTop(buffer, 1);
+  stack.peekTop(buffer, &available, 1);
   std::cout << "test_pop passed!\n";
 }
 
 void test_multiple_pages() {
   ASTStack stack = ASTStack();
+  uint64_t available = 0;
   ASTNode nodes[70];
-  for (int i = 0; i < 70; ++i) nodes[i] = {Grammar::EXPR};
+  for (int i = 0; i < 70; ++i) nodes[i] = {Rule::EXPR};
   for (int i = 0; i < 70; ++i) stack.shift(&nodes[i]);
   ASTNode* buffer[1];
-  stack.peekTop(buffer, 1);
-  assert(buffer[0]->grammar == Grammar::EXPR);
+  stack.peekTop(buffer, &available, 1);
+  assert(buffer[0]->rule == Rule::EXPR);
   stack.pop(10);
-  stack.peekTop(buffer, 1);
-  assert(buffer[0]->grammar == Grammar::EXPR);
+  stack.peekTop(buffer, &available, 1);
+  assert(buffer[0]->rule == Rule::EXPR);
   std::cout << "test_multiple_pages passed!\n";
 }
 
 void test_peek_buffer() {
   ASTStack stack = ASTStack();
-  ASTNode nodes[5] = {{Grammar::EXPR},
-                      {Grammar::EXPR},
-                      {Grammar::EXPR},
-                      {Grammar::EXPR},
-                      {Grammar::EXPR}};
+  ASTNode nodes[5] = {
+      {Rule::EXPR}, {Rule::EXPR}, {Rule::EXPR}, {Rule::EXPR}, {Rule::EXPR}};
   for (int i = 0; i < 5; ++i) stack.shift(&nodes[i]);
+  uint64_t available = 0;
   ASTNode* buffer[4];
-  stack.peekTop(buffer, 4);
-  assert(buffer[0]->grammar == Grammar::EXPR);
-  assert(buffer[1]->grammar == Grammar::EXPR);
-  assert(buffer[2]->grammar == Grammar::EXPR);
-  assert(buffer[3]->grammar == Grammar::EXPR);
+  stack.peekTop(buffer, &available, 4);
+  assert(buffer[0]->rule == Rule::EXPR);
+  assert(buffer[1]->rule == Rule::EXPR);
+  assert(buffer[2]->rule == Rule::EXPR);
+  assert(buffer[3]->rule == Rule::EXPR);
   std::cout << "test_peek_buffer passed!\n";
 }
 
@@ -75,46 +73,47 @@ bool testToken(const Token& token) {
   switch (token.type) {
     case TokenType::KEYWORD:
       std::cout << "Token: Type=" << static_cast<int>(token.type)
-                << " - Keyword: "
-                << KeywordHandler::from(std::get<Keyword>(token.value.value()))
+                << " - Keyword: " << KeywordHandler::from(token.value.keyword)
                 << "\n";
       break;
 
     case TokenType::IDENTIFIER:
       std::cout << "Token: Type=" << static_cast<int>(token.type)
-                << " - Identifier: "
-                << std::get<Identifier>(token.value.value()).name << "\n";
+                << " - Identifier: " << token.value.identifier.name << "\n";
       break;
 
-    case TokenType::LITERAL: {
+    case TokenType::CHAR_LITERAL:
       std::cout << "Token: Type=" << static_cast<int>(token.type)
-                << " - Numeric Literal: ";
+                << " - Char Literal: " << token.value.literal.character << "\n";
+      break;
 
-      Literal lt = std::get<Literal>(token.value.value());
-      switch (lt.type) {
-        case LiteralType::INTEGER:
-          std::cout << std::get<uint64_t>(lt.value) << "\n";
-          break;
-        case LiteralType::FLOAT:
-          std::cout << std::get<double>(lt.value) << "\n";
-          break;
-        case LiteralType::CHAR:
-          std::cout << std::get<char>(lt.value) << "\n";
-          break;
-        case LiteralType::STRING:
-          std::cout << std::get<std::string>(lt.value) << "\n";
-          break;
-        default:
-          std::cerr << "Unknown literal type\n";
-      }
-    } break;
+    case TokenType::STRING_LITERAL:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - String Literal: " << token.value.literal.string << "\n";
+      break;
+
+    case TokenType::BOOLEAN_LITERAL:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - Boolean Literal: " << token.value.literal.boolean
+                << "\n";
+      break;
+
+    case TokenType::INTEGER_LITERAL:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - Integer Literal: " << token.value.literal.integer
+                << "\n";
+      break;
+
+    case TokenType::FLOATING_LITERAL:
+      std::cout << "Token: Type=" << static_cast<int>(token.type)
+                << " - Floating Literal: " << token.value.literal.floating
+                << "\n";
+      break;
 
     case TokenType::PUNCTUATOR:
       std::cout << "Token: Type=" << static_cast<int>(token.type)
                 << " - Special Punctuation: "
-                << PunctuatorHandler::from(
-                       std::get<Punctuator>(token.value.value()))
-                << "\n";
+                << PunctuatorHandler::from(token.value.punctuator) << "\n";
       break;
 
     case TokenType::COMMENT:
@@ -184,8 +183,8 @@ void testParser(const std::string& input, const std::string& testName) {
 
   TokenStream stream = TokenStream(lexer, 10);
 
-  // Parser parser = Parser(stream);
-  // parser.parse();
+  Parser parser = Parser(stream);
+  parser.parse();
 }
 
 int main() {
@@ -209,18 +208,27 @@ int main() {
   // )",
   //                 "TOKEN STREAM TEST");
 
-  // testParser(R"(
-  //   a + b
-  //   int a;
-  //   int a = 5;
-  //   int a = 5;
-  // )",
-  //            "PARSER TEST");
+  // test_push_and_peek();
+  // test_pop();
+  // test_multiple_pages();
+  // test_peek_buffer();
 
-  test_push_and_peek();
-  test_pop();
-  test_multiple_pages();
-  test_peek_buffer();
+  testParser(R"(
+    int a = 5;
+    int b = 10;
+    int c;
+  )",
+             "PARSER TEST");
+
+  // std::cout << "ASTNode " << sizeof(ASTNode) << "\n";
+  // std::cout << "TokenType " << sizeof(TokenType) << "\n";
+  // std::cout << "Token " << sizeof(Token) << "\n";
+  // std::cout << "Literal " << sizeof(Literal) << "\n";
+  // std::cout << "Identifier " << sizeof(Identifier) << "\n";
+  // std::cout << "TokenValue " << sizeof(TokenValue) << "\n";
+  // std::cout << "TokenStream " << sizeof(TokenStream) << "\n";
+  // std::cout << "ShortString_view " << sizeof(ShortString_view) << "\n";
+  // std::cout << "string_view " << sizeof(std::string_view) << "\n";
 
   std::cout << "All tests passed!\n";
   return 0;

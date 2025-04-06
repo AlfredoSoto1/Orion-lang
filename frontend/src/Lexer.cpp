@@ -21,8 +21,9 @@ namespace compiler {
 
     // If we are at the end of the source code, return an EOF token
     if (pos >= source.length()) {
-      EndOfFile eof = {0, line, "INSERT PATH HERE (DONT FORGET THE COLUMN)"};
-      return Token{TokenType::ENDOF, eof};
+      Token tok{TokenType::ENDOF};
+      tok.value.eof = {0, line};  // Path should be saved in lexer
+      return tok;
     }
 
     char c = peek();
@@ -63,11 +64,26 @@ namespace compiler {
 
     // If the lexeme is not a kewword, return it as an identifier
     if (kw == Keyword::UNDEFINED) {
-      return Token{TokenType::IDENTIFIER,
-                   Identifier{unique_hash++, std::string(lexeme)}};
+      Token tok{TokenType::IDENTIFIER};
+      tok.value.identifier = {unique_hash++, lexeme};
+      return tok;
     }
 
-    return Token{TokenType::KEYWORD, kw};
+    // If the keyword is a boolean literal, return it as a literal
+    if (kw == Keyword::TRUE) {
+      Token tok{TokenType::BOOLEAN_LITERAL};
+      tok.value.literal.boolean = true;
+      return tok;
+    } else if (kw == Keyword::FALSE) {
+      Token tok{TokenType::BOOLEAN_LITERAL};
+      tok.value.literal.boolean = false;
+      return tok;
+    }
+
+    Token tok{TokenType::KEYWORD};
+    tok.value.keyword = kw;
+    return tok;
+    // return Token{TokenType::KEYWORD, kw};
   }
 
   Lexer::LexerResult Lexer::makeNumberLiteral() {
@@ -106,8 +122,10 @@ namespace compiler {
 
       auto num_result = toFloat(float_literal);
       if (!num_result) return std::unexpected(num_result.error());
-      return Token{TokenType::LITERAL,
-                   Literal{LiteralType::FLOAT, *num_result}};
+
+      Token tok{TokenType::FLOATING_LITERAL};
+      tok.value.literal.integer = *num_result;
+      return tok;
     }
 
     // Capture numeric part
@@ -130,8 +148,10 @@ namespace compiler {
     // Convert integer based on detected base
     auto num_result = toInt(number_literal, base);
     if (!num_result) return std::unexpected(num_result.error());
-    return Token{TokenType::LITERAL,
-                 Literal{LiteralType::INTEGER, *num_result}};
+
+    Token tok{TokenType::INTEGER_LITERAL};
+    tok.value.literal.integer = *num_result;
+    return tok;
   }
 
   Lexer::LexerResult Lexer::makeStringLiteral() {
@@ -168,8 +188,9 @@ namespace compiler {
       return lexerError(LexerErrorType::UNCLOSED_STRING_LITERAL);
     }
 
-    return Token{TokenType::LITERAL,
-                 Literal{LiteralType::STRING, string_literal}};
+    Token tok{TokenType::STRING_LITERAL};
+    tok.value.literal.string = string_literal;
+    return tok;
   }
 
   Lexer::LexerResult Lexer::makeCharLiteral() {
@@ -190,7 +211,9 @@ namespace compiler {
     // consume last '
     next();
 
-    return Token{TokenType::LITERAL, Literal{LiteralType::CHAR, c}};
+    Token tok{TokenType::CHAR_LITERAL};
+    tok.value.literal.character = c;
+    return tok;
   }
 
   Lexer::LexerResult Lexer::makePunctuator() {
@@ -226,8 +249,9 @@ namespace compiler {
 
       // If the sub-longest punctuator is valid, return it
       if (punc != Punctuator::UNKNOWN) {
-        return Token{is_comment ? TokenType::COMMENT : TokenType::PUNCTUATOR,
-                     PunctuatorHandler::from(punc_view)};
+        Token tok{TokenType::PUNCTUATOR};
+        tok.value.punctuator = punc;
+        return tok;
       }
 
       // Move position back removing sufix

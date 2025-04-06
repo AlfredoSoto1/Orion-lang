@@ -32,7 +32,7 @@ namespace compiler {
 
   private:
     uint64_t pos;
-    uint64_t line;
+    uint32_t line;
     uint64_t unique_hash;
     std::string_view source;
 

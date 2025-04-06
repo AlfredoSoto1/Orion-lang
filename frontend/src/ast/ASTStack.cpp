@@ -31,7 +31,7 @@ namespace compiler {
     }
   }
 
-  void ASTStack::peekTop(ASTNode** buffer, uint8_t size) {
+  void ASTStack::peekTop(ASTNode** buffer, uint64_t* available, uint8_t size) {
     if (!head || size == 0) return;
 
     uint64_t count = 0;
@@ -45,6 +45,8 @@ namespace compiler {
       current = current->prev;
       index = current ? Page::PAGE_SIZE : 0;
     }
+
+    *available = count;
   }
 
   size_t ASTStack::size() const { return stack_size; }
