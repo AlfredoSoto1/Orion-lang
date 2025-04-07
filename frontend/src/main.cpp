@@ -10,8 +10,8 @@ using namespace compiler;
 
 void test_push_and_peek() {
   ASTStack stack = ASTStack();
-  ASTNode node1 = {Rule::EXPR};
-  ASTNode node2 = {Rule::EXPR};
+  ASTNode node1 = {false, Rule::EXPR, {}, {}};
+  ASTNode node2 = {false, Rule::EXPR, {}, {}};
   stack.shift(&node1);
   stack.shift(&node2);
   uint64_t available = 0;
@@ -23,8 +23,8 @@ void test_push_and_peek() {
 
 void test_pop() {
   ASTStack stack = ASTStack();
-  ASTNode node1 = {Rule::EXPR};
-  ASTNode node2 = {Rule::EXPR};
+  ASTNode node1 = {false, Rule::EXPR, {}, {}};
+  ASTNode node2 = {false, Rule::EXPR, {}, {}};
   stack.shift(&node1);
   stack.shift(&node2);
   stack.pop(1);
@@ -43,7 +43,7 @@ void test_multiple_pages() {
   ASTStack stack = ASTStack();
   uint64_t available = 0;
   ASTNode nodes[70]{};
-  for (int i = 0; i < 70; ++i) nodes[i] = {Rule::EXPR};
+  for (int i = 0; i < 70; ++i) nodes[i] = {false, Rule::EXPR, {}, {}};
   for (int i = 0; i < 70; ++i) stack.shift(&nodes[i]);
   ASTNode* buffer[1];
   stack.peekTop(buffer, &available, 1);
@@ -56,8 +56,11 @@ void test_multiple_pages() {
 
 void test_peek_buffer() {
   ASTStack stack = ASTStack();
-  ASTNode nodes[5] = {
-      {Rule::EXPR}, {Rule::EXPR}, {Rule::EXPR}, {Rule::EXPR}, {Rule::EXPR}};
+  ASTNode nodes[5] = {{false, Rule::EXPR, {}, {}},
+                      {false, Rule::EXPR, {}, {}},
+                      {false, Rule::EXPR, {}, {}},
+                      {false, Rule::EXPR, {}, {}},
+                      {false, Rule::EXPR, {}, {}}};
   for (int i = 0; i < 5; ++i) stack.shift(&nodes[i]);
   uint64_t available = 0;
   ASTNode* buffer[4];
@@ -221,8 +224,11 @@ int main() {
   //            "PARSER TEST");
 
   std::cout << "ASTNode " << sizeof(ASTNode) << "\n";
-  std::cout << "TokenType " << sizeof(TokenType) << "\n";
+  std::cout << "Rule " << sizeof(Rule) << "\n";
   std::cout << "Token " << sizeof(Token) << "\n";
+  std::cout << "4xASTNode* " << sizeof(ASTNode*) * 4 << "\n";
+
+  std::cout << "TokenType " << sizeof(TokenType) << "\n";
   std::cout << "Literal " << sizeof(Literal) << "\n";
   std::cout << "Identifier " << sizeof(Identifier) << "\n";
   std::cout << "TokenValue " << sizeof(TokenValue) << "\n";

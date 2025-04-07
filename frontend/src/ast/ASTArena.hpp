@@ -1,7 +1,6 @@
 #pragma once
 
-#include <variant>
-#include <vector>
+#include <stack>
 
 #include "ASTRules.hpp"
 #include "Tokens.hpp"
@@ -34,11 +33,31 @@ namespace compiler {
     /**
      * @brief Allocates a new ASTNode and returns a pointer to it.
      *
-     * @param rule
-     * @param content
+     * @tparam Args
+     * @param args
      * @return ASTNode*
      */
-    ASTNode* allocate(const Rule& rule, const ASTNode::Value& content);
+    template <typename... Args>
+    ASTNode* allocate(Args&&... args) {
+      if (!head || top_index >= Page::PAGE_SIZE) {
+        // Add a new page when overflows
+        addPage();
+      }
+
+      if (!free_nodes.empty()) {
+        // Reuse a free node if available
+        ASTNode* node = free_nodes.top();
+        free_nodes.pop();
+        node->is_free = false;
+        node_count++;
+        return new (node) ASTNode{false, std::forward<Args>(args)...};
+      }
+
+      // Emplace node into page slot
+      node_count++;
+      return new (&head->nodes[top_index++])
+          ASTNode{false, std::forward<Args>(args)...};
+    }
 
     /**
      * @brief Frees the given ASTNode.
@@ -48,15 +67,10 @@ namespace compiler {
     void free(ASTNode* node);
 
   private:
-    struct ASTNodeBlock {
-      bool is_free = true;
-      ASTNode data{};
-    };
-
     struct Page {
       static constexpr uint8_t PAGE_SIZE = 64;
       Page* prev = nullptr;
-      ASTNodeBlock nodes[PAGE_SIZE]{};
+      ASTNode nodes[PAGE_SIZE]{};
     };
 
   private:
@@ -64,6 +78,9 @@ namespace compiler {
     uint64_t page_count;
     uint64_t node_count;
     Page* head;
+
+    // TEMP
+    std::stack<ASTNode*> free_nodes;
 
   private:
     void clear();

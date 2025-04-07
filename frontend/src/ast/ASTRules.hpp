@@ -60,16 +60,16 @@ namespace compiler {
     //             | ID (args)
     //             | (expr)
     SINGLE_EXPR,
-    ID,
     ID_DEREF,
     ID_REF,
     LITERAL,
     ID_LPAREN_ARGS_RPAREN,
     LPAREN_EXPR_RPAREN,
 
-    // Volatile Expressions : These are not in the grammar but are used for
-    // building the AST.
-    KEYWORD,
+    // This expects to read the value of the token and determine how it should
+    // reduce the grammar expression.
+    TOKEN,
+
     MAX,
   };
 
@@ -78,19 +78,9 @@ namespace compiler {
    *
    */
   struct ASTNode {
+    bool is_free = true;
     Rule rule;
-    union Value {
-      EndOfFile eof;
-      Operator op;
-      Punctuator punc;
-      Keyword keyword;
-      uint64_t integer;
-      double floating;
-      char character;
-      bool boolean;
-      std::string_view string;
-      std::string_view identifier;
-    } value;
+    Token token;
     ASTNode* branch[4]{};
   };
 }  // namespace compiler

@@ -29,33 +29,36 @@ namespace compiler {
     }
 
     // Determine the appropriate Rule based on the token type
-    Rule rule = Rule::UNKNOWN;
-    ASTNode::Value value{};
+    // Rule rule = Rule::UNKNOWN;
 
-    // TODO: Handle the cases to determine the rule and value
-    // This is a simplified example; you may need to adjust it based on your
-    // grammar and AST structure.
-    switch (tok.type) {
-      case TokenType::KEYWORD:
-        rule = Rule::KEYWORD;
-        value.keyword = tok.value.keyword;
-        break;
-      case TokenType::IDENTIFIER:
-        rule = Rule::ID;
-        break;
-      case TokenType::STRING_LITERAL:
-        rule = Rule::LITERAL;
-        break;
-      case TokenType::PUNCTUATOR:
-        // rule = Rule::PUNC;
-        break;
-      default:
-        rule = Rule::UNKNOWN;  // THIS SHOULD NEVER HAPPEN
-        return;                // Throw error HERE
-    }
+    // // TODO: Handle the cases to determine the rule and value
+    // // This is a simplified example; you may need to adjust it based on your
+    // // grammar and AST structure.
+    // switch (tok.type) {
+    //   case TokenType::KEYWORD:
+    //     rule = Rule::KEYWORD;
+    //     value.keyword = tok.value.keyword;
+    //     break;
+    //   case TokenType::IDENTIFIER:
+    //     rule = Rule::ID;
+    //     value.identifier = tok.value.identifier.name;
+    //     break;
+    //   case TokenType::STRING_LITERAL:
+    //     rule = Rule::LITERAL;
+    //     value.string = tok.value.literal.string;
+    //     break;
+    //   case TokenType::PUNCTUATOR:
+    //     // rule = Rule::PUNC;
+    //     value.punc = tok.value.punctuator;
+    //     break;
+    //   default:
+    //     rule = Rule::UNKNOWN;  // THIS SHOULD NEVER HAPPEN
+    //     return;                // Throw error HERE
+    // }
+
     // Push the token with the determined grammar type onto the stack
-    ASTNode* node = ast_arena.allocate(rule, value);
-    ast_stack.shift(node);
+    // ASTNode* node = ast_arena.allocate(rule, value);
+    // ast_stack.shift(node);
     tokens.next();
   }
 

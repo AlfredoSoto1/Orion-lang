@@ -3,38 +3,33 @@
 namespace compiler {
 
   ASTArena::ASTArena() noexcept
-      : top_index(0), page_count(0), node_count(0), head(nullptr) {}
+      : top_index(0),
+        page_count(0),
+        node_count(0),
+        head(nullptr),
+        free_nodes() {}
 
-  ASTArena::~ASTArena() noexcept { clear(); }
+  ASTArena::~ASTArena() noexcept {
+    clear();
+    while (!free_nodes.empty()) {
+      free_nodes.pop();
+    }
+  }
 
   size_t ASTArena::used() const { return node_count; }
   size_t ASTArena::available() const { return page_count * Page::PAGE_SIZE; }
 
-  ASTNode* ASTArena::allocate(const Rule& rule, const ASTNode::Value& content) {
-    if (!head || top_index >= Page::PAGE_SIZE) {
-      // Add a new page when overflows
-      addPage();
-    }
-    // Emplace node into page slot
-    node_count++;
-    ASTNodeBlock* block =
-        new (&head->nodes[top_index++]) ASTNodeBlock{false, {rule, content}};
-    return &block->data;
-  }
-
   void ASTArena::free(ASTNode* node) {
-    // The address of the node must be the same as the address of the block
-    // in the page. This is a bit of a hack, but it works because we control the
-    // allocation of the nodes in the arena.
-    ASTNodeBlock* block = reinterpret_cast<ASTNodeBlock*>(node);
-    if (block->is_free) {
+    if (node->is_free) {
       // Already freed, do nothing
       return;
     }
-    block->is_free = true;
+    node->is_free = true;
     node_count--;
+
     // TODO: Add to a stack the address of the freed block to use next
     // time a new allocation is set up.
+    free_nodes.push(node);
   }
 
   void ASTArena::clear() {
