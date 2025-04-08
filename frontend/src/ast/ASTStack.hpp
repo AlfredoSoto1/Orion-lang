@@ -32,11 +32,9 @@ namespace compiler {
      *        and stores it in buffer. The first element
      *        of the buffer is the top of the stack.
      *
-     * @param buffer
-     * @param available
-     * @param size
+     * @param top
      */
-    void peekTop(ASTNode** buffer, uint64_t* available, uint8_t size);
+    void peekTop(ASTNode* top[4]);
 
     /**
      * @brief Size of the stack being in use
@@ -65,8 +63,8 @@ namespace compiler {
 
   private:
     uint8_t top_index;
-    uint64_t page_count;
-    uint64_t stack_size;
+    uint32_t page_count;
+    uint32_t stack_size;
     Page* head;
 
   private:

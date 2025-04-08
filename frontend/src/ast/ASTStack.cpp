@@ -31,22 +31,21 @@ namespace compiler {
     }
   }
 
-  void ASTStack::peekTop(ASTNode** buffer, uint64_t* available, uint8_t size) {
-    if (!head || size == 0) return;
+  void ASTStack::peekTop(ASTNode* top[4]) {
+    if (!head) return;
 
-    uint64_t count = 0;
-    Page* current = head;
-    uint64_t index = top_index;
+    // Cache the top of the stack and the current page.
+    Page* page = head;
+    uint8_t index = top_index;
 
-    while (current && count < size) {
-      while (index > 0 && count < size) {
-        buffer[count++] = current->nodes[--index];
-      }
-      current = current->prev;
-      index = current ? Page::PAGE_SIZE : 0;
+    for (uint8_t i = 0; i < 4; i++) {
+      // If the index is zero and the previous page is valid, it will force to
+      // move back on a page and continue popping.
+      page = index == 0 && page->prev ? page->prev : page;
+      index = index == 0 && page->prev ? Page::PAGE_SIZE : 0;
+
+      top[i] = page->nodes[--index];
     }
-
-    *available = count;
   }
 
   size_t ASTStack::size() const { return stack_size; }

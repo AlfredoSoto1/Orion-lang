@@ -28,37 +28,8 @@ namespace compiler {
       return;
     }
 
-    // Determine the appropriate Rule based on the token type
-    // Rule rule = Rule::UNKNOWN;
-
-    // // TODO: Handle the cases to determine the rule and value
-    // // This is a simplified example; you may need to adjust it based on your
-    // // grammar and AST structure.
-    // switch (tok.type) {
-    //   case TokenType::KEYWORD:
-    //     rule = Rule::KEYWORD;
-    //     value.keyword = tok.value.keyword;
-    //     break;
-    //   case TokenType::IDENTIFIER:
-    //     rule = Rule::ID;
-    //     value.identifier = tok.value.identifier.name;
-    //     break;
-    //   case TokenType::STRING_LITERAL:
-    //     rule = Rule::LITERAL;
-    //     value.string = tok.value.literal.string;
-    //     break;
-    //   case TokenType::PUNCTUATOR:
-    //     // rule = Rule::PUNC;
-    //     value.punc = tok.value.punctuator;
-    //     break;
-    //   default:
-    //     rule = Rule::UNKNOWN;  // THIS SHOULD NEVER HAPPEN
-    //     return;                // Throw error HERE
-    // }
-
     // Push the token with the determined grammar type onto the stack
-    // ASTNode* node = ast_arena.allocate(rule, value);
-    // ast_stack.shift(node);
+    ast_stack.shift(ast_arena.allocate(Rule::TOKEN, tok));
     tokens.next();
   }
 
@@ -69,17 +40,10 @@ namespace compiler {
       return false;
     }
 
-    uint64_t available = 0;
-    ASTNode* top[sizeof(uint64_t)];
+    ASTNode* top[4];
+    ast_stack.peekTop(top);
 
-    ast_stack.peekTop(top, &available, sizeof(uint64_t));
     // Check if the top of the stack matches any of the reduction rules
-
-    uint64_t rule = static_cast<uint8_t>(Rule::UNKNOWN);
-
-    for (uint8_t i = 0; i < available; i++) {
-      rule |= static_cast<uint8_t>(top[available - i - 1]->rule) << i;
-    }
 
     // Prepare 3 nodes used for reference
     // ASTNode* top[3];
