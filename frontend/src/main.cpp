@@ -8,70 +8,6 @@
 
 using namespace compiler;
 
-void test_push_and_peek() {
-  ASTStack stack = ASTStack();
-  ASTNode node1 = {false, Rule::EXPR, {}, {}};
-  ASTNode node2 = {false, Rule::EXPR, {}, {}};
-  stack.shift(&node1);
-  stack.shift(&node2);
-  uint64_t available = 0;
-  ASTNode* buffer[1];
-  stack.peekTop(buffer, &available, 1);
-  assert(buffer[0]->rule == Rule::EXPR);
-  std::cout << "test_push_and_peek passed!\n";
-}
-
-void test_pop() {
-  ASTStack stack = ASTStack();
-  ASTNode node1 = {false, Rule::EXPR, {}, {}};
-  ASTNode node2 = {false, Rule::EXPR, {}, {}};
-  stack.shift(&node1);
-  stack.shift(&node2);
-  stack.pop(1);
-  uint64_t available = 0;
-  ASTNode* buffer[1];
-  stack.peekTop(buffer, &available, 1);
-  assert(buffer[0]->rule == Rule::EXPR);
-  stack.pop(1);
-
-  // Does nothing
-  stack.peekTop(buffer, &available, 1);
-  std::cout << "test_pop passed!\n";
-}
-
-void test_multiple_pages() {
-  ASTStack stack = ASTStack();
-  uint64_t available = 0;
-  ASTNode nodes[70]{};
-  for (int i = 0; i < 70; ++i) nodes[i] = {false, Rule::EXPR, {}, {}};
-  for (int i = 0; i < 70; ++i) stack.shift(&nodes[i]);
-  ASTNode* buffer[1];
-  stack.peekTop(buffer, &available, 1);
-  assert(buffer[0]->rule == Rule::EXPR);
-  stack.pop(10);
-  stack.peekTop(buffer, &available, 1);
-  assert(buffer[0]->rule == Rule::EXPR);
-  std::cout << "test_multiple_pages passed!\n";
-}
-
-void test_peek_buffer() {
-  ASTStack stack = ASTStack();
-  ASTNode nodes[5] = {{false, Rule::EXPR, {}, {}},
-                      {false, Rule::EXPR, {}, {}},
-                      {false, Rule::EXPR, {}, {}},
-                      {false, Rule::EXPR, {}, {}},
-                      {false, Rule::EXPR, {}, {}}};
-  for (int i = 0; i < 5; ++i) stack.shift(&nodes[i]);
-  uint64_t available = 0;
-  ASTNode* buffer[4];
-  stack.peekTop(buffer, &available, 4);
-  assert(buffer[0]->rule == Rule::EXPR);
-  assert(buffer[1]->rule == Rule::EXPR);
-  assert(buffer[2]->rule == Rule::EXPR);
-  assert(buffer[3]->rule == Rule::EXPR);
-  std::cout << "test_peek_buffer passed!\n";
-}
-
 bool testToken(const Token& token) {
   switch (token.type) {
     case TokenType::KEYWORD:
@@ -211,17 +147,18 @@ int main() {
   // )",
   //                 "TOKEN STREAM TEST");
 
-  // test_push_and_peek();
-  // test_pop();
-  // test_multiple_pages();
-  // test_peek_buffer();
-
-  // testParser(R"(
-  //   int a = 5;
-  //   int b = 10;
-  //   int c;
-  // )",
-  //            "PARSER TEST");
+  testParser(R"(
+    a
+    *a
+    &a
+    5
+    5.0
+    "Hello, World!"
+    'a'
+    a(b, c, d)
+   (a)
+  )",
+             "PARSER TEST");
 
   std::cout << "ASTNode " << sizeof(ASTNode) << "\n";
   std::cout << "Rule " << sizeof(Rule) << "\n";

@@ -10,7 +10,12 @@ namespace compiler {
 
   void Parser::parse() {
     // Repeat until stack is 1 and all tokens are consumed
-    while (ast_stack.size() > 1 || tokens.hasNext()) {
+    while (ast_stack.size() > 1) {
+      // Check if there are any tokens left to process
+      if (!tokens.hasNext()) {
+        break;
+      }
+
       bool reduced = tryReduce();
       if (!reduced) {
         shift();
@@ -28,8 +33,33 @@ namespace compiler {
       return;
     }
 
+    // Determine the grammar type based on the token type
+    Rule rule = Rule::UNKNOWN;
+
+    switch (tok.type) {
+      case TokenType::KEYWORD:
+        rule = Rule::KEYWORD;
+        break;
+      case TokenType::IDENTIFIER:
+        rule = Rule::ID;
+        break;
+      case TokenType::CHAR_LITERAL:
+      case TokenType::STRING_LITERAL:
+      case TokenType::BOOLEAN_LITERAL:
+      case TokenType::INTEGER_LITERAL:
+      case TokenType::FLOATING_LITERAL:
+        rule = Rule::LITERAL;
+        break;
+      case TokenType::PUNCTUATOR:
+        rule = Rule::PUNCTUATOR;
+        break;
+      default:
+        rule = Rule::UNKNOWN;
+        break;
+    }
+
     // Push the token with the determined grammar type onto the stack
-    ast_stack.shift(ast_arena.allocate(Rule::TOKEN, tok));
+    ast_stack.shift(ast_arena.allocate(rule, tok));
     tokens.next();
   }
 
@@ -43,315 +73,104 @@ namespace compiler {
     ASTNode* top[4];
     ast_stack.peekTop(top);
 
-    // Check if the top of the stack matches any of the reduction rules
+    uint64_t encoded = 0;
 
-    // Prepare 3 nodes used for reference
-    // ASTNode* top[3];
+    for (int i = 0; i < 4; ++i) {
+      uint64_t rule_val =
+          static_cast<uint64_t>(top[i] ? top[i]->rule : Rule::UNKNOWN);
+      // each rule occupies 8 bits
+      encoded |= (rule_val & 0xFF) << (i * 8);
+    }
 
-    // auto match = [&](std::initializer_list<Grammar> pattern) -> bool {
-    //   if (ast_stack.size() < pattern.size()) {
-    //     return false;
-    //   }
-    //   std::stack<ASTNode> temp;
+    // SINGLE_EXPR → ID
+    constexpr uint64_t PAT_ID = (static_cast<uint8_t>(Rule::ID) << 24);
 
-    //   // Loop through the pattern using index-based access
-    //   for (Grammar grammar : pattern) {
-    //     if (ast_stack.top().grammar != grammar) {
-    //       // Restore stack on failure
-    //       while (!temp.empty()) {
-    //         ast_stack.push(temp.top());
-    //         temp.pop();
-    //       }
-    //       return false;
-    //     }
-    //     temp.push(ast_stack.top());  // Save valid matches
-    //     ast_stack.pop();
-    //   }
+    // SINGLE_EXPR → *ID
+    constexpr uint64_t PAT_STAR_ID =
+        (static_cast<uint8_t>(Rule::ID) << 24) |
+        (static_cast<uint8_t>(Rule::PUNCTUATOR) << 16);
 
-    //   // Restore stack
-    //   while (!temp.empty()) {
-    //     ast_stack.push(temp.top());
-    //     temp.pop();
-    //   }
-    //   return true;
-    // };
+    // SINGLE_EXPR → &ID
+    constexpr uint64_t PAT_BAND_ID =
+        (static_cast<uint8_t>(Rule::ID) << 24) |
+        (static_cast<uint8_t>(Rule::PUNCTUATOR) << 16);
 
-    // This is where you implement the reduction logic based on your grammar
-    // rules. You need to examine the top elements of the ast_stack_ and see
-    // if they match the right-hand side of any of your grammar rules.
+    // SINGLE_EXPR → LITERAL
+    constexpr uint64_t PAT_LITERAL =
+        (static_cast<uint8_t>(Rule::LITERAL) << 24);
 
-    // Example grammar rules (very simplified):
-    // 1. Expression -> Expression + Term
-    // 2. Expression -> Term
-    // 3. Term -> Term * Factor
-    // 4. Term -> Factor
-    // 5. Factor -> IDENTIFIER
-    // 6. Factor -> NUMBER
-    // 7. Factor -> ( Expression )
+    // SINGLE_EXPR → ID ( args )
+    constexpr uint64_t PAT_ID_LPAREN_ARGS_RPAREN =
+        (static_cast<uint8_t>(Rule::PUNCTUATOR) << 24) |
+        (static_cast<uint8_t>(Rule::ARGS) << 16) |
+        (static_cast<uint8_t>(Rule::PUNCTUATOR) << 8) |
+        (static_cast<uint8_t>(Rule::ID));
 
-    // Implement checks for these rules (or your actual grammar)
+    // SINGLE_EXPR → ( expr )
+    constexpr uint64_t PAT_LPAREN_EXPR_RPAREN =
+        (static_cast<uint8_t>(Rule::PUNCTUATOR) << 24) |
+        (static_cast<uint8_t>(Rule::EXPR) << 16) |
+        (static_cast<uint8_t>(Rule::PUNCTUATOR) << 8);
 
-    // // Rule 1: Expression -> Expression + Term
-    // if (ast_stack.size() >= 3 && match({PUNC, EXPR, TERM})) {
-    //   ASTNode term = ast_stack.top();
-    //   ast_stack.pop();
-    //   ASTNode plus_op = ast_stack.top();
-    //   ast_stack.pop();
-    //   ASTNode expr = ast_stack.top();
-    //   ast_stack.pop();
+    // SINGLE_EXPR → ID
+    if (encoded == PAT_ID) {
+      top[3]->rule = SINGLE_EXPR;
+      return true;
+    }
 
-    //   if (plus_op.grammar == PUNC &&
-    //       std::get<Punctuator>(std::get<Token>(plus_op.value).value.value())
-    //       ==
-    //           Punctuator::PLUS) {
-    //     ast_stack.push(
-    //         ASTNode{EXPR, std::vector<ASTNode>{expr, plus_op, term}});
-    //     return true;
-    //   } else {
-    //     // Restore stack if the operator is not a '+'
-    //     ast_stack.push(expr);
-    //     ast_stack.push(plus_op);
-    //     ast_stack.push(term);
-    //   }
-    // }
+    // SINGLE_EXPR → *ID
+    if (encoded == PAT_STAR_ID &&
+        top[2]->token.value.punctuator == Punctuator::STAR) {
+      ast_stack.pop(2);
+      ast_arena.free(top[2]);  // Free the '*'
+      top[3]->rule = SINGLE_EXPR;
+      ast_stack.shift(top[3]);
+      return true;
+    }
 
-    // // Rule 3: Term -> Term * Factor
-    // if (ast_stack.size() >= 3 && match({FACTOR, PUNC, TERM})) {
-    //   ASTNode factor = ast_stack.top();
-    //   ast_stack.pop();
-    //   ASTNode mult_op = ast_stack.top();
-    //   ast_stack.pop();
-    //   ASTNode term = ast_stack.top();
-    //   ast_stack.pop();
+    // SINGLE_EXPR → &ID
+    if (encoded == PAT_BAND_ID &&
+        top[2]->token.value.punctuator == Punctuator::BAND) {
+      ast_stack.pop(2);
+      ast_arena.free(top[2]);  // Free the '&'
+      top[3]->rule = SINGLE_EXPR;
+      ast_stack.shift(top[3]);
+      return true;
+    }
 
-    //   if (mult_op.grammar == PUNC &&
-    //       std::get<Punctuator>(std::get<Token>(mult_op.value).value.value())
-    //       ==
-    //           Punctuator::STAR) {
-    //     ast_stack.push(
-    //         ASTNode{TERM, std::vector<ASTNode>{term, mult_op, factor}});
-    //     return true;
-    //   } else {
-    //     // Restore stack if the operator is not '*'
-    //     ast_stack.push(term);
-    //     ast_stack.push(mult_op);
-    //     ast_stack.push(factor);
-    //   }
-    // }
+    // SINGLE_EXPR → LITERAL
+    if (encoded == PAT_LITERAL) {
+      top[3]->rule = SINGLE_EXPR;
+      return true;
+    }
 
-    // // Rule 7: Factor -> ( Expression )
-    // if (ast_stack.size() >= 3 && match({RPAREN, EXPR, LPAREN})) {
-    //   ASTNode rparen = ast_stack.top();
-    //   ast_stack.pop();
-    //   ASTNode expression = ast_stack.top();
-    //   ast_stack.pop();
-    //   ASTNode lparen = ast_stack.top();
-    //   ast_stack.pop();
+    // SINGLE_EXPR → ID ( args )
+    if (encoded == PAT_ID_LPAREN_ARGS_RPAREN &&
+        top[3]->token.value.punctuator == Punctuator::RPAREN &&
+        top[1]->token.value.punctuator == Punctuator::LPAREN) {
+      ast_stack.pop(4);
+      ASTNode* call = ast_arena.allocate(SINGLE_EXPR);
+      call->branch[0] = top[0];  // ID
+      call->branch[1] = top[2];  // ARGS
+      ast_arena.free(top[1]);    // LPAREN
+      ast_arena.free(top[3]);    // RPAREN
+      ast_stack.shift(call);
+      return true;
+    }
 
-    //   if (lparen.grammar == LPAREN && rparen.grammar == RPAREN) {
-    //     ast_stack.push(
-    //         ASTNode{FACTOR, std::vector<ASTNode>{lparen, expression,
-    //         rparen}});
-    //     return true;
-    //   } else {
-    //     // Restore stack if parentheses are not valid
-    //     ast_stack.push(lparen);
-    //     ast_stack.push(expression);
-    //     ast_stack.push(rparen);
-    //   }
-    // }
-
-    // // Rule 5: Factor -> IDENTIFIER
-    // if (match({IDENT})) {
-    //   ASTNode identifier = ast_stack.top();
-    //   ast_stack.pop();
-    //   ast_stack.push(ASTNode{FACTOR, std::vector<ASTNode>{identifier}});
-    //   return true;
-    // }
-
-    // // Rule 6: Factor -> NUMBER
-    // if (match({LITERAL})) {
-    //   ASTNode literal = ast_stack.top();
-    //   ast_stack.pop();
-    //   ast_stack.push(ASTNode{FACTOR, std::vector<ASTNode>{literal}});
-    //   return true;
-    // }
-
-    // // Rule 4: Term -> Factor
-    // if (match({FACTOR})) {
-    //   ASTNode factor = ast_stack.top();
-    //   ast_stack.pop();
-    //   ast_stack.push(ASTNode{TERM, std::vector<ASTNode>{factor}});
-    //   return true;
-    // }
-
-    // // Rule 2: Expression -> Term
-    // if (match({TERM})) {
-    //   ASTNode term = ast_stack.top();
-    //   ast_stack.pop();
-    //   ast_stack.push(ASTNode{EXPR, std::vector<ASTNode>{term}});
-    //   return true;
-    // }
+    // SINGLE_EXPR → ( expr )
+    if (encoded == PAT_LPAREN_EXPR_RPAREN &&
+        top[3]->token.value.punctuator == Punctuator::RPAREN &&
+        top[1]->token.value.punctuator == Punctuator::LPAREN) {
+      ast_stack.pop(3);
+      ast_arena.free(top[1]);      // LPAREN
+      ast_arena.free(top[3]);      // RPAREN
+      top[2]->rule = SINGLE_EXPR;  // EXPR node
+      ast_stack.shift(top[2]);
+      return true;
+    }
 
     // If no match is found, return false
     return false;
   }
-
-  //   bool Parser::tryReduce() {
-  //     using enum Grammar;
-
-  //     if (ast_stack.empty()) {
-  //         return false;
-  //     }
-
-  // // Reduction rules
-  // std::vector<ASTNode> nodes;
-
-  // auto match = [&](std::initializer_list<Grammar> pattern) -> bool {
-  //     if (ast_stack.size() < pattern.size()) {
-  //         return false;
-  //     }
-  //     nodes.clear();
-  //     for (auto it = pattern.begin(); it != pattern.end(); ++it) {
-  //         nodes.push_back(ast_stack.top());
-  //         ast_stack.pop();
-  //         if (nodes.back().grammar != *it) {
-  //             for (auto rit = nodes.rbegin(); rit != nodes.rend(); ++rit)
-  //             {
-  //                 ast_stack.push(*rit);
-  //             }
-  //             return false;
-  //         }
-  //     }
-  //     std::reverse(nodes.begin(), nodes.end());
-  //     return true;
-  // };
-
-  //     auto reduce = [&](Grammar result) {
-  //         ast_stack.emplace(ASTNode{result, nodes});
-  //     };
-
-  //     // Primary expression
-  //     if (match({IDEN}) || match({LITERAL}) || match({PUNC, EXPR, PUNC}))
-  // {
-  //         reduce(PRIMARY_EXPR);
-  //         return true;
-  //     }
-
-  //     // Postfix expressions
-  //     if (match({PRIMARY_EXPR})) {
-  //         reduce(POSTFIX_EXPR);
-  //         return true;
-  //     }
-  //     if (match({POSTFIX_EXPR, PUNC, EXPR, PUNC}) || match({POSTFIX_EXPR,
-  //     PUNC, PUNC})) {
-  //         reduce(POSTFIX_EXPR);
-  //         return true;
-  //     }
-  //     if (match({POSTFIX_EXPR, PUNC, IDEN}) || match({POSTFIX_EXPR, PUNC,
-  //     PUNC}) ||
-  //         match({POSTFIX_EXPR, PUNC}) || match({POSTFIX_EXPR, PUNC})) {
-  //         reduce(POSTFIX_EXPR);
-  //         return true;
-  //     }
-
-  //     // Unary expressions
-  //     if (match({POSTFIX_EXPR}) || match({PUNC, UNARY_EXPR}) ||
-  // match({PUNC,
-  //     TYPE_NAME, PUNC, UNARY_EXPR})) {
-  //         reduce(UNARY_EXPR);
-  //         return true;
-  //     }
-
-  //     // Cast expressions
-  //     if (match({UNARY_EXPR}) || match({PUNC, TYPE_NAME, PUNC,
-  // CAST_EXPR})) {
-  //         reduce(CAST_EXPR);
-  //         return true;
-  //     }
-
-  //     // Multiplicative expressions
-  //     if (match({CAST_EXPR}) || match({MULT_EXPR, PUNC, CAST_EXPR})) {
-  //         reduce(MULT_EXPR);
-  //         return true;
-  //     }
-
-  //     // Additive expressions
-  //     if (match({MULT_EXPR}) || match({ADD_EXPR, PUNC, MULT_EXPR})) {
-  //         reduce(ADD_EXPR);
-  //         return true;
-  //     }
-
-  //     // Shift expressions
-  //     if (match({ADD_EXPR}) || match({SHIFT_EXPR, PUNC, ADD_EXPR})) {
-  //         reduce(SHIFT_EXPR);
-  //         return true;
-  //     }
-
-  //     // Relational expressions
-  //     if (match({SHIFT_EXPR}) || match({REL_EXPR, PUNC, SHIFT_EXPR})) {
-  //         reduce(REL_EXPR);
-  //         return true;
-  //     }
-
-  //     // Equality expressions
-  //     if (match({REL_EXPR}) || match({EQ_EXPR, PUNC, REL_EXPR})) {
-  //         reduce(EQ_EXPR);
-  //         return true;
-  //     }
-
-  //     // Bitwise AND expressions
-  //     if (match({EQ_EXPR}) || match({AND_EXPR, PUNC, EQ_EXPR})) {
-  //         reduce(AND_EXPR);
-  //         return true;
-  //     }
-
-  //     // Bitwise XOR expressions
-  //     if (match({AND_EXPR}) || match({XOR_EXPR, PUNC, AND_EXPR})) {
-  //         reduce(XOR_EXPR);
-  //         return true;
-  //     }
-
-  //     // Bitwise OR expressions
-  //     if (match({XOR_EXPR}) || match({OR_EXPR, PUNC, XOR_EXPR})) {
-  //         reduce(OR_EXPR);
-  //         return true;
-  //     }
-
-  //     // Logical AND expressions
-  //     if (match({OR_EXPR}) || match({LOG_AND_EXPR, PUNC, OR_EXPR})) {
-  //         reduce(LOG_AND_EXPR);
-  //         return true;
-  //     }
-
-  //     // Logical OR expressions
-  //     if (match({LOG_AND_EXPR}) || match({LOG_OR_EXPR, PUNC,
-  // LOG_AND_EXPR}))
-  //     {
-  //         reduce(LOG_OR_EXPR);
-  //         return true;
-  //     }
-
-  //     // Conditional expressions
-  //     if (match({LOG_OR_EXPR}) || match({LOG_OR_EXPR, PUNC, EXPR, PUNC,
-  //     COND_EXPR})) {
-  //         reduce(COND_EXPR);
-  //         return true;
-  //     }
-
-  //     // Assignment expressions
-  //     if (match({COND_EXPR}) || match({UNARY_EXPR, PUNC, ASSIGN_EXPR})) {
-  //         reduce(ASSIGN_EXPR);
-  //         return true;
-  //     }
-
-  //     // Expression
-  //     if (match({ASSIGN_EXPR}) || match({EXPR, PUNC, ASSIGN_EXPR})) {
-  //         reduce(EXPR);
-  //         return true;
-  //     }
-
-  //     return false;
-  // }
-
 }  // namespace compiler

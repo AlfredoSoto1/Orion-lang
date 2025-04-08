@@ -60,15 +60,15 @@ namespace compiler {
     //             | ID (args)
     //             | (expr)
     SINGLE_EXPR,
-    ID_DEREF,
-    ID_REF,
-    LITERAL,
-    ID_LPAREN_ARGS_RPAREN,
-    LPAREN_EXPR_RPAREN,
 
     // This expects to read the value of the token and determine how it should
     // reduce the grammar expression.
     TOKEN,
+    ID,
+    LITERAL,
+    PUNCTUATOR,
+    OPERATOR,
+    KEYWORD,
 
     MAX,
   };

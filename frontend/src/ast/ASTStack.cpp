@@ -41,10 +41,15 @@ namespace compiler {
     for (uint8_t i = 0; i < 4; i++) {
       // If the index is zero and the previous page is valid, it will force to
       // move back on a page and continue popping.
-      page = index == 0 && page->prev ? page->prev : page;
-      index = index == 0 && page->prev ? Page::PAGE_SIZE : 0;
-
-      top[i] = page->nodes[--index];
+      if (index == 0 && page->prev) {
+        page = page->prev;
+        index = Page::PAGE_SIZE;
+        top[4 - i - 1] = page->nodes[--index];
+      } else if (index == 0 && !page->prev) {
+        top[4 - i - 1] = nullptr;  // No more nodes to peek
+      } else {
+        top[4 - i - 1] = page->nodes[--index];
+      }
     }
   }
 
