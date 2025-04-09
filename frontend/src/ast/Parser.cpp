@@ -10,7 +10,7 @@ namespace compiler {
 
   void Parser::parse() {
     // Repeat until stack is 1 and all tokens are consumed
-    while (ast_stack.size() > 1) {
+    do {
       // Check if there are any tokens left to process
       if (!tokens.hasNext()) {
         break;
@@ -20,7 +20,7 @@ namespace compiler {
       if (!reduced) {
         shift();
       }
-    }
+    } while (ast_stack.size() >= 1);
   }
 
   void Parser::shift() {
