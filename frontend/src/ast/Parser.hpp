@@ -42,5 +42,9 @@ namespace compiler {
   private:
     void shift();
     bool tryReduce();
+
+  private:
+    void parse_ID();
+    void parse_LITERAL();
   };
 }  // namespace compiler
