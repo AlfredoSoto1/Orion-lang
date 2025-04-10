@@ -83,6 +83,32 @@ namespace compiler {
     Token token;
     ASTNode* branch[4]{};
   };
+
+  struct ASTNode_N {
+    bool is_free = true;
+    union {
+      struct {
+        Identifier id;
+      } parsed_id;
+      struct {
+        Punctuator star;
+        Identifier id;
+      } parsed_deref_id;
+      struct {
+        Punctuator amp;
+        Identifier id;
+      } parsed_ref_id;
+      struct {
+        Literal literal;
+      } parsed_literal;
+      struct {
+        Identifier id;
+        Punctuator lparen;
+        // Args;
+        Punctuator rparen;
+      } parsed_method;
+    };
+  };
 }  // namespace compiler
 
 /*

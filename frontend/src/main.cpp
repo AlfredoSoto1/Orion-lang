@@ -160,6 +160,11 @@ int main() {
   )",
              "PARSER TEST");
 
+  ASTNode_N n{};
+  n.is_free = false;
+  n.parsed_id = {};
+  n.parsed_deref_id = {};
+
   std::cout << "ASTNode " << sizeof(ASTNode) << "\n";
   std::cout << "Rule " << sizeof(Rule) << "\n";
   std::cout << "Token " << sizeof(Token) << "\n";
