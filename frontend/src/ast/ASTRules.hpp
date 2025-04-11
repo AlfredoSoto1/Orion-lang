@@ -84,7 +84,7 @@ namespace compiler {
     ASTNode* branch[4]{};
   };
 
-  struct ASTNode_N {
+  struct Produce {
     bool is_free = true;
     union {
       struct {
