@@ -35,6 +35,9 @@ namespace compiler {
     void parse();
 
   private:
+    enum class Action { SHIFT, REDUCE, ACCEPT, ERROR };
+
+  private:
     TokenStream& tokens;
     ASTStack ast_stack;
     ASTArena ast_arena;

@@ -38,12 +38,101 @@ namespace compiler {
     return Operator::UNKNOWN;
   }
 
-  bool OperatorHandler::isUnary(Operator op) { return false; }
-  bool OperatorHandler::isBinary(Operator op) { return false; }
-  bool OperatorHandler::isTernary(Operator op) { return false; }
-  bool OperatorHandler::isAssignment(Operator op) { return false; }
-  bool OperatorHandler::isLogical(Operator op) { return false; }
-  bool OperatorHandler::isBitwise(Operator op) { return false; }
-  bool OperatorHandler::isComparison(Operator op) { return false; }
-  bool OperatorHandler::isIncrementDecrement(Operator op) { return false; }
+  std::string_view OperatorHandler::to_string(Operator op) {
+    using enum Operator;
+    switch (op) {
+      case ADD:
+        return "+";
+      case SUB:
+        return "-";
+      case MUL:
+        return "*";
+      case DIV:
+        return "/";
+      case MOD:
+        return "%";
+
+      case INC:
+        return "++";
+      case DEC:
+        return "--";
+
+      case ASSIGN:
+        return "=";
+      case ADD_EQ:
+        return "+=";
+      case SUB_EQ:
+        return "-=";
+      case MUL_EQ:
+        return "*=";
+      case DIV_EQ:
+        return "/=";
+      case MOD_EQ:
+        return "%=";
+
+      case BAND:
+        return "&";
+      case BOR:
+        return "|";
+      case BXOR:
+        return "^";
+      case BNOT:
+        return "~";
+      case LSHIFT:
+        return "<<";
+      case RSHIFT:
+        return ">>";
+
+      case LSHIFT_EQ:
+        return "<<=";
+      case RSHIFT_EQ:
+        return ">>=";
+      case AND_EQ:
+        return "&=";
+      case OR_EQ:
+        return "|=";
+      case XOR_EQ:
+        return "^=";
+      case NOT_EQ:
+        return "~=";
+
+      case AND:
+        return "&&";
+      case OR:
+        return "||";
+      case NOT:
+        return "!";
+
+      case EQ:
+        return "==";
+      case NEQ:
+        return "!=";
+      case LT:
+        return "<";
+      case GT:
+        return ">";
+      case LTE:
+        return "<=";
+      case GTE:
+        return ">=";
+
+      case TERNARY:
+        return "?";
+      case LARROW:
+        return "<-";
+      case RARROW:
+        return "->";
+      case REFERENCE:
+        return "&";
+      case EXPR_REFERENCE:
+        return "&&";
+      case PTR:
+        return "*";
+      case PTR_DEREF:
+        return "*";
+
+      default:
+        return "unknown";
+    }
+  }
 }  // namespace compiler

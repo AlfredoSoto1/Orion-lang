@@ -65,7 +65,7 @@ namespace compiler {
     // If the lexeme is not a kewword, return it as an identifier
     if (kw == Keyword::UNDEFINED) {
       Token tok{TokenType::IDENTIFIER};
-      tok.value.identifier = {unique_hash++, lexeme};
+      tok.value.identifier.name = lexeme;
       return tok;
     }
 

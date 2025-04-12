@@ -5,6 +5,8 @@
 namespace compiler {
 
   enum class Operator : uint8_t {
+    UNKNOWN = 0,
+
     // Arithmetic operators
     ADD,  // +
     SUB,  // -
@@ -61,8 +63,6 @@ namespace compiler {
     EXPR_REFERENCE,  // &&
     PTR,             // *
     PTR_DEREF,       // *
-
-    UNKNOWN,
   };
 
   class OperatorHandler {
@@ -75,13 +75,12 @@ namespace compiler {
      */
     static Operator from(std::string_view str);
 
-    static bool isUnary(Operator op);
-    static bool isBinary(Operator op);
-    static bool isTernary(Operator op);
-    static bool isAssignment(Operator op);
-    static bool isLogical(Operator op);
-    static bool isBitwise(Operator op);
-    static bool isComparison(Operator op);
-    static bool isIncrementDecrement(Operator op);
+    /**
+     * @brief Converts an operator to a string_view
+     *
+     * @param op
+     * @return std::string_view
+     */
+    static std::string_view to_string(Operator op);
   };
 }  // namespace compiler

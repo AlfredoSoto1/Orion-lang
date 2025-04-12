@@ -84,31 +84,6 @@ namespace compiler {
     ASTNode* branch[4]{};
   };
 
-  struct Produce {
-    bool is_free = true;
-    union {
-      struct {
-        Identifier id;
-      } parsed_id;
-      struct {
-        Punctuator star;
-        Identifier id;
-      } parsed_deref_id;
-      struct {
-        Punctuator amp;
-        Identifier id;
-      } parsed_ref_id;
-      struct {
-        Literal literal;
-      } parsed_literal;
-      struct {
-        Identifier id;
-        Punctuator lparen;
-        // Args;
-        Punctuator rparen;
-      } parsed_method;
-    };
-  };
 }  // namespace compiler
 
 /*

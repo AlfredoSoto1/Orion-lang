@@ -1,8 +1,6 @@
 #pragma once
 
-#include <optional>
 #include <string>
-#include <variant>
 
 #include "Keyword.hpp"
 #include "Operators.hpp"
@@ -20,7 +18,6 @@ namespace compiler {
    *
    */
   struct Identifier {
-    uint64_t uid;
     std::string_view name;
   };
 
@@ -37,15 +34,12 @@ namespace compiler {
    * @brief
    *
    */
-  struct Literal {
-    // LiteralType type;
-    union {
-      uint64_t integer;         // Unsigned 64-bit integer
-      double floating;          // Double precision floating point
-      char character;           // Single Byte character
-      bool boolean;             // Boolean
-      std::string_view string;  // String
-    };
+  union Literal {
+    uint64_t integer;         // Unsigned 64-bit integer
+    double floating;          // Double precision floating point
+    char character;           // Single Byte character
+    bool boolean;             // Boolean
+    std::string_view string;  // String
   };
 
   /**
@@ -74,14 +68,12 @@ namespace compiler {
    * identifiers, punctuators, and end-of-file markers.
    *
    */
-  struct TokenValue {
-    union {
-      Keyword keyword;        // Keyword
-      Literal literal;        // Literal
-      Identifier identifier;  // Identifier
-      Punctuator punctuator;  // Punctuator
-      EndOfFile eof;          // End of file
-    };
+  union TokenValue {
+    Keyword keyword;        // Keyword
+    Literal literal;        // Literal
+    Identifier identifier;  // Identifier
+    Punctuator punctuator;  // Punctuator
+    EndOfFile eof;          // End of file
   };
 
   /**
@@ -99,7 +91,7 @@ namespace compiler {
    */
   struct MetaToken {
     Token* token;
-    size_t line;
-    size_t column;
+    uint32_t line;
+    uint32_t column;
   };
 }  // namespace compiler

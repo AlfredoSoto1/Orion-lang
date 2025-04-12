@@ -7,6 +7,7 @@ namespace compiler {
 
   enum class Punctuator : uint8_t {
     UNKNOWN = 0,
+
     AT,              // @
     HASH,            // #
     DOLLAR,          // $
