@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace compiler {
 
@@ -60,6 +60,6 @@ namespace compiler {
      *
      * @return std::string
      */
-    std::string to_string();
+    std::string_view to_string();
   };
 }  // namespace compiler

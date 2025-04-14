@@ -2,10 +2,12 @@
 
 #include <expected>
 #include <functional>
+#include <iostream>
 #include <unordered_map>
+#include <variant>
 
-#include "StorageAST.hpp"
-#include "TokenStream.hpp"
+#include "ast/StorageAST.hpp"
+#include "tokens/TokenStream.hpp"
 
 namespace compiler {
 

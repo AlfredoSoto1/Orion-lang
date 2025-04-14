@@ -4,7 +4,7 @@
 #include <string_view>
 
 #include "LexerError.hpp"
-#include "Tokens.hpp"
+#include "tokens/Tokens.hpp"
 
 namespace compiler {
 

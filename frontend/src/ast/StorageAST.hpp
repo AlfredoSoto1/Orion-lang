@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "Tokens.hpp"
+#include "tokens/Tokens.hpp"
 
 namespace compiler {
 

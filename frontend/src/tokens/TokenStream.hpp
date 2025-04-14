@@ -1,8 +1,6 @@
 #pragma once
 
-#include <expected>
-
-#include "Lexer.hpp"
+#include "lexer/Lexer.hpp"
 
 namespace compiler {
 

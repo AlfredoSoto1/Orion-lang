@@ -1,7 +1,7 @@
 #include "Lexer.hpp"
 
+#include <cctype>
 #include <charconv>
-#include <cmath>
 
 /**
  * @brief Expands into an unexpected lexer error
