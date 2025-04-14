@@ -59,28 +59,5 @@ namespace compiler {
     Rule makeRule(std::initializer_list<Symbol> syms) const noexcept;
 
     void populateRuleTable() noexcept;
-
-  private:
-    enum class ActionType { SHIFT, REDUCE, ACCEPT, ERROR };
-
-    /**
-     * @brief For SHIFT, 'next' is the next state.
-     *        For REDUCE, 'next' is the index into the grammar rules.
-     *
-     */
-    struct Action {
-      ActionType type;
-      Index next;
-    };
-
-    /**
-     * @brief Index into ASTStorage (the data-oriented AST you built)
-     *
-     */
-    struct StackEntry {
-      // Symbol symbol;
-      uint32_t state;
-      Index ast_index;
-    };
   };
 }  // namespace compiler
