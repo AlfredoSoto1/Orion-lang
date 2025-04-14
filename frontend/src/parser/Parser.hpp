@@ -1,11 +1,12 @@
 #pragma once
 
-#include <expected>
 #include <functional>
 #include <iostream>
+#include <optional>
 #include <unordered_map>
 #include <variant>
 
+#include "ParserError.hpp"
 #include "ast/StorageAST.hpp"
 #include "tokens/TokenStream.hpp"
 
@@ -16,7 +17,7 @@ namespace compiler {
    */
   class Parser final {
   public:
-    // using ParseResult = std::expected<ParserError, ParserError>;
+    using ParseResult = std::optional<ParserError>;
 
   public:
     /**
@@ -41,6 +42,7 @@ namespace compiler {
     // ASTArena ast_arena;
 
     std::vector<Symbol> reduction_stack;
+    std::vector<ParserError> errors;
     std::unordered_map<Rule, ReductionHandler, RuleHash, RuleEqual> rt_handlers;
 
   private:

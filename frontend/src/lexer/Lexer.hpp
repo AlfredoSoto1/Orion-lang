@@ -31,9 +31,8 @@ namespace compiler {
     LexerResult advance();
 
   private:
-    uint64_t pos;
+    uint32_t pos;
     uint32_t line;
-    uint64_t unique_hash;
     std::string_view source;
 
     using DParseResult = std::expected<double, LexerError>;

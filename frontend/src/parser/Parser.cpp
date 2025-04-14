@@ -1,9 +1,11 @@
 #include "Parser.hpp"
 
+#include <string>
+
 namespace compiler {
 
   Parser::Parser(TokenStream& tokens) noexcept
-      : tokens(tokens), reduction_stack(), rt_handlers() {
+      : tokens(tokens), reduction_stack(), rt_handlers(), errors() {
     // Build rule table following grammar from Storage AST
     populateRuleTable();
   }
@@ -31,8 +33,7 @@ namespace compiler {
     // Validate if token has no defect to continue
     if (!result) {
       LexerError error = result.error();
-      std::cerr << "Lexer Error at line " << error.line << ", col " << error.pos
-                << ": " << error.to_string() << "\n";
+      errors.emplace_back(ParserErrorType::LEXER_ERROR, error);
       return;
     }
 
@@ -44,6 +45,8 @@ namespace compiler {
       // cannot match token to a symbol
       // Note: This should never happen. This is because a defect token must've
       // been handled in previous if statement.
+      errors.emplace_back(ParserErrorType::UNEXPECTED_SYMBOL,
+                          std::optional<LexerError>{});
       return;
     }
 

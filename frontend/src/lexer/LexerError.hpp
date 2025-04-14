@@ -50,8 +50,8 @@ namespace compiler {
    */
   class LexerError {
   public:
-    uint64_t line;
-    uint64_t pos;
+    uint32_t line;
+    uint32_t pos;
     LexerErrorType type;
 
   public:

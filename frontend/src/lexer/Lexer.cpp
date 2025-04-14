@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <charconv>
+#include <cmath>
 
 /**
  * @brief Expands into an unexpected lexer error
@@ -11,8 +12,7 @@
 
 namespace compiler {
 
-  Lexer::Lexer(std::string_view src) noexcept
-      : pos(0), line(0), unique_hash(0), source(src) {}
+  Lexer::Lexer(std::string_view src) noexcept : pos(0), line(0), source(src) {}
 
   Lexer::LexerResult Lexer::advance() {
     // Skip all whitespace characters until we reach a non-whitespace

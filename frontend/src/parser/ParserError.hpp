@@ -1,12 +1,16 @@
 #pragma once
 
+#include <optional>
 #include <string_view>
+
+#include "lexer/LexerError.hpp"
 
 namespace compiler {
 
   enum class ParserErrorType {
     // General
     UNKNOWN_ERROR,      // Catch-all for unexpected issues
+    LEXER_ERROR,        // Lexer Error when reading token
     UNEXPECTED_EOF,     // Unexpected end of input during parsing
     MISMATCHED_TOKEN,   // Got token that doesn't match the expected grammar
     UNRECOGNIZED_RULE,  // Rule not found in the rule table
@@ -45,15 +49,13 @@ namespace compiler {
     TYPE_EXPECTED,             // Expected a type but something else was found
 
     // Internal parser engine
-    STACK_UNDERFLOW,   // Not enough symbols to apply a rule
     REDUCTION_FAILED,  // Handler failed to produce a result
   };
 
   class ParserError {
   public:
-    uint64_t line;
-    uint64_t pos;
     ParserErrorType type;
+    std::optional<LexerError> lexer_error;
 
   public:
     /**
