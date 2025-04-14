@@ -1,3 +1,4 @@
+#include <bitset>
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -32,7 +33,8 @@ void print_expr(const ASTStorage& ast, Index expr_idx, int depth = 0) {
     }
     case ExprAST::Type::BINARY_EXPR: {
       const BinaryExprAST& bin = ast.binary_exprs[expr.index];
-      std::cout << "BinaryExpr: " << OperatorHandler::to_string(bin.op) << "\n";
+      std::cout << "BinaryExpr: " << PunctuatorHandler::to_string(bin.op)
+                << "\n";
       print_expr(ast, bin.left, depth + 1);
       print_expr(ast, bin.right, depth + 1);
       break;
@@ -132,21 +134,21 @@ void test_build_expression(ASTStorage& ast) {
 
   // Binary: b * c
   Index mul = static_cast<Index>(ast.binary_exprs.size());
-  ast.binary_exprs.push_back({expr_b, expr_c, Operator::MUL});
+  ast.binary_exprs.push_back({expr_b, expr_c, Punctuator::STAR});
 
   Index mul_expr = static_cast<Index>(ast.exprs.size());
   ast.exprs.push_back({ExprAST::Type::BINARY_EXPR, mul});
 
   // Binary: a + (b * c)
   Index add = static_cast<Index>(ast.binary_exprs.size());
-  ast.binary_exprs.push_back({expr_a, mul_expr, Operator::ADD});
+  ast.binary_exprs.push_back({expr_a, mul_expr, Punctuator::PLUS});
 
   Index final_expr = static_cast<Index>(ast.exprs.size());
   ast.exprs.push_back({ExprAST::Type::BINARY_EXPR, add});
 
   // Verifications
   assert(ast.exprs[final_expr].type == ExprAST::Type::BINARY_EXPR);
-  assert(ast.binary_exprs[add].op == Operator::ADD);
+  assert(ast.binary_exprs[add].op == Punctuator::PLUS);
   assert(ast.binary_exprs[add].left == expr_a);
   assert(ast.binary_exprs[add].right == mul_expr);
 }
@@ -226,8 +228,8 @@ bool testToken(const Token& token) {
   switch (token.type) {
     case TokenType::KEYWORD:
       std::cout << "Token: Type=" << static_cast<int>(token.type)
-                << " - Keyword: " << KeywordHandler::from(token.value.keyword)
-                << "\n";
+                << " - Keyword: "
+                << KeywordHandler::to_string(token.value.keyword) << "\n";
       break;
 
     case TokenType::IDENTIFIER:
@@ -266,7 +268,7 @@ bool testToken(const Token& token) {
     case TokenType::PUNCTUATOR:
       std::cout << "Token: Type=" << static_cast<int>(token.type)
                 << " - Special Punctuation: "
-                << PunctuatorHandler::from(token.value.punctuator) << "\n";
+                << PunctuatorHandler::to_string(token.value.punctuator) << "\n";
       break;
 
     case TokenType::COMMENT:
@@ -298,7 +300,7 @@ void testLexer(const std::string& input, const std::string& testName) {
     } else {
       LexerError error = result.error();
       std::cerr << "Lexer Error at line " << error.line << ", col " << error.pos
-                << ": " << error.toString() << "\n";
+                << ": " << error.to_string() << "\n";
       break;
     }
   }
@@ -316,7 +318,7 @@ void testTokenStream(const std::string& input, const std::string& testName) {
     if (!result.has_value()) {
       LexerError error = result.error();
       std::cerr << "Lexer Error at line " << error.line << ", col " << error.pos
-                << ": " << error.toString() << "\n";
+                << ": " << error.to_string() << "\n";
       break;
     }
 
@@ -361,26 +363,17 @@ int main() {
   // )",
   //                 "TOKEN STREAM TEST");
 
-  // testParser(R"(
-  //   a
-  //   *a
-  //   &a
-  //   5
-  //   5.0
-  //   "Hello, World!"
-  //   'a'
-  //   a(b, c, d)
-  //  (a)
-  // )",
-  //            "PARSER TEST");
-
   run_all_tests();
+
+  testParser(R"(
+    a + b
+  )",
+             "PARSER TEST");
 
   // std::cout << "ASTNode " << sizeof(ASTNode) << "\n";
   // std::cout << "Rule " << sizeof(Rule) << "\n";
   // std::cout << "Token " << sizeof(Token) << "\n";
   // std::cout << "4xASTNode* " << sizeof(ASTNode*) * 4 << "\n";
-
   // std::cout << "TokenType " << sizeof(TokenType) << "\n";
   // std::cout << "Literal " << sizeof(Literal) << "\n";
   // std::cout << "Identifier " << sizeof(Identifier) << "\n";
@@ -388,6 +381,20 @@ int main() {
   // std::cout << "TokenStream " << sizeof(TokenStream) << "\n";
   // std::cout << "ShortString_view " << sizeof(string_view) << "\n";
   // std::cout << "string_view " << sizeof(std::string_view) << "\n";
+
+  // Rule r1 = {};
+  // r1.symbols[0].type = Symbol::Type::NON_TERMINAL;
+  // r1.symbols[0].nonterminal = NonTerminal::EXPR;
+  // r1.symbols[1].type = Symbol::Type::IDENTIFIER;
+  // r1.symbols[1].terminal.ident_or_lit_or_eof = 1;
+  // r1.symbols[2].type = Symbol::Type::NON_TERMINAL;
+  // r1.symbols[2].nonterminal = NonTerminal::EXPR;
+
+  // std::cout << "Rule " << sizeof(Rule) << " " << std::bitset<32>(r1.i1) <<
+  // ":"
+  //           << std::bitset<32>(r1.i2) << ":" << std::bitset<32>(r1.i3) << ":"
+  //           << ":" << std::bitset<32>(r1.i4) << ":" << std::bitset<32>(r1.i5)
+  //           << "\n";
 
   std::cout << "All tests passed!\n";
   return 0;

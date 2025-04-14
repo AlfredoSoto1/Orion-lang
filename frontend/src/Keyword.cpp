@@ -68,7 +68,7 @@ namespace compiler {
     return (it != keyword_map.end()) ? it->second : Keyword::UNDEFINED;
   }
 
-  std::string_view KeywordHandler::from(Keyword kw) {
+  std::string_view KeywordHandler::to_string(Keyword kw) {
     switch (kw) {
       case Keyword::IF:
         return "if";
@@ -184,46 +184,4 @@ namespace compiler {
         return "UNKNOWN";
     }
   }
-
-  bool KeywordHandler::isControlFlow(Keyword kw) {
-    return kw == Keyword::IF || kw == Keyword::ELSE || kw == Keyword::FOR ||
-           kw == Keyword::DO || kw == Keyword::WHILE || kw == Keyword::SWITCH ||
-           kw == Keyword::CASE || kw == Keyword::BREAK ||
-           kw == Keyword::CONTINUE || kw == Keyword::DEFAULT ||
-           kw == Keyword::INSTANCEOF || kw == Keyword::WHEN;
-  }
-
-  bool KeywordHandler::isStorageSpecifier(Keyword kw) {
-    return kw == Keyword::STATIC || kw == Keyword::CONST ||
-           kw == Keyword::MUTABLE || kw == Keyword::FINAL ||
-           kw == Keyword::VOLATILE || kw == Keyword::EXTERN ||
-           kw == Keyword::IMPORT || kw == Keyword::EXPORT ||
-           kw == Keyword::MODULE || kw == Keyword::PACKAGE ||
-           kw == Keyword::USING || kw == Keyword::NAMESPACE ||
-           kw == Keyword::TYPEDEF || kw == Keyword::AUTO;
-  }
-
-  bool KeywordHandler::isFunctionSpecifier(Keyword kw) {
-    return kw == Keyword::INLINE || kw == Keyword::NOINLINE ||
-           kw == Keyword::NORETURN || kw == Keyword::NOEXCEPT ||
-           kw == Keyword::PURE || kw == Keyword::CONSTEVAL ||
-           kw == Keyword::CONSTINIT || kw == Keyword::EXPLICIT ||
-           kw == Keyword::IMPLICIT;
-  }
-
-  bool KeywordHandler::isMemoryManagement(Keyword kw) {
-    return kw == Keyword::NEW || kw == Keyword::DELETE;
-  }
-
-  bool KeywordHandler::isTypeSpecifier(Keyword kw) {
-    return kw == Keyword::VOID || kw == Keyword::BOOL || kw == Keyword::CHAR ||
-           kw == Keyword::NULL_OBJ || kw == Keyword::NULLPTR ||
-           kw == Keyword::TRUE || kw == Keyword::FALSE || kw == Keyword::INT ||
-           kw == Keyword::FLOAT || kw == Keyword::DOUBLE ||
-           kw == Keyword::LONG || kw == Keyword::SHORT ||
-           kw == Keyword::UNSIGNED || kw == Keyword::SIGNED ||
-           kw == Keyword::CONST || kw == Keyword::VOLATILE ||
-           kw == Keyword::MUTABLE;
-  }
-
 }  // namespace compiler

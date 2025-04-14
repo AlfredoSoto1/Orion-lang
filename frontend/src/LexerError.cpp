@@ -2,7 +2,7 @@
 
 namespace compiler {
 
-  std::string LexerError::toString() {
+  std::string LexerError::to_string() {
     switch (type) {
       case LexerErrorType::UNKNOWN_ERROR:
         return "Unknown error encountered.";

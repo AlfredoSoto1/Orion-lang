@@ -65,7 +65,7 @@ namespace compiler {
     return (it != punctuator_map.end()) ? it->second : Punctuator::UNKNOWN;
   }
 
-  std::string_view PunctuatorHandler::from(Punctuator punc) {
+  std::string_view PunctuatorHandler::to_string(Punctuator punc) {
     switch (punc) {
       case Punctuator::AT:
         return "@";

@@ -1,13 +1,8 @@
 #pragma once
 
-#include <cstdint>
-#include <string_view>
-
-#include "Tokens.hpp"
-
 namespace compiler {
 
-  enum class Rule : uint8_t {
+  enum class Rule {
     UNKNOWN = 0,
 
     // Program → decl Program
@@ -72,18 +67,6 @@ namespace compiler {
 
     MAX,
   };
-
-  /**
-   * @brief This needs to be an interface
-   *
-   */
-  struct ASTNode {
-    bool is_free = true;
-    Rule rule;
-    Token token;
-    ASTNode* branch[4]{};
-  };
-
 }  // namespace compiler
 
 /*

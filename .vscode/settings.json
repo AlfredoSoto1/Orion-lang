@@ -73,6 +73,7 @@
     "ranges": "cpp",
     "span": "cpp",
     "algorithm": "cpp",
-    "cassert": "cpp"
+    "cassert": "cpp",
+    "bitset": "cpp"
   }
 }

@@ -66,7 +66,7 @@ namespace compiler {
   struct BinaryExprAST {
     Index left;
     Index right;
-    Operator op;
+    Punctuator op;
   };
 
   // expr → expr + expr
@@ -78,7 +78,7 @@ namespace compiler {
   //      | LITERAL
   //      | (expr)
   struct ExprAST {
-    enum class Type {
+    enum class Type : uint8_t {
       ID,
       LITERAL,
       PAREN_EXPR,
@@ -91,7 +91,7 @@ namespace compiler {
   //      | expr;
   //      | return expr;
   struct StmtAST {
-    enum class Type {
+    enum class Type : uint8_t {
       IF,
       EXPR,
       RETURN,
@@ -104,11 +104,15 @@ namespace compiler {
     Index block;
   };
 
+  struct ReturnStmtAST {
+    Index index;
+  };
+
   // stmt_list → stmt stmt_list
   //           | stmt
   //           | ε
   struct StmtListAST {
-    enum class Type {
+    enum class Type : uint8_t {
       EMPTY,
       SINGLE,
       MULTIPLE,
@@ -120,7 +124,7 @@ namespace compiler {
   // block → stmt
   //       | { stmt_list }
   struct BlockAST {
-    enum class Type {
+    enum class Type : uint8_t {
       STMT,
       LIST,
     } type;
@@ -136,7 +140,7 @@ namespace compiler {
   // param_list → param , param_list
   //            | param
   struct ParamListAST {
-    enum class Type {
+    enum class Type : uint8_t {
       LIST,
       PARAM,
     } type;
@@ -147,7 +151,7 @@ namespace compiler {
   // params → param_list
   //        | ε
   struct ParamsAST {
-    enum class Type {
+    enum class Type : uint8_t {
       EMPTY,
       PARAMS,
     } type;
@@ -179,6 +183,7 @@ namespace compiler {
 
     std::vector<StmtAST> stmts;
     std::vector<IfStmtAST> if_stmts;
+    std::vector<ReturnStmtAST> return_stmts;
 
     std::vector<StmtListAST> stmt_lists;
     std::vector<BlockAST> blocks;
@@ -188,4 +193,89 @@ namespace compiler {
     std::vector<ParamsAST> params_list;
   };
 
+  union NodeAST {
+    ProgramAST program;
+    FunctionAST function;
+    IDAST id;
+    LiteralAST literal;
+    ExprAST expr;
+    BinaryExprAST binary_expr;
+    StmtAST stmt;
+    IfStmtAST if_stmt;
+    ReturnStmtAST return_stmt;
+    StmtListAST stmt_list;
+    BlockAST block;
+    ParamAST param;
+    ParamListAST param_list;
+    ParamsAST params_list;
+  };
+
+  union Terminal {
+    Keyword keyword;        // Keyword
+    Punctuator punctuator;  // Punctuator
+    uint8_t ident_or_lit;   // Identifier or literal
+  };
+
+  enum class NonTerminal : uint8_t {
+    UNKNOWN = 0,
+    PROGRAM,
+    FUNCTION_DECL,
+    PARAMS,
+    PARAM_LIST,
+    PARAM,
+    PARAM_EMPTY,
+    BLOCK,
+    STMT_LIST,
+    STMT,
+    STMT_EMPTY,
+    IF_STMT,
+    RETURN_STMT,
+    EXPR,
+    BINARY_EXPR,
+  };
+
+  struct Symbol {
+    enum class Type : uint8_t {
+      UNKNOWN = 0,
+      NON_TERMINAL,
+      KEYWORD,
+      IDENTIFIER,
+      PUNCTUATOR,
+      LITERAL,
+    } type;
+    union {
+      Terminal terminal;
+      NonTerminal nonterminal;
+    };
+  };
+
+  union Rule {
+    Symbol symbols[10];
+    struct {
+      uint32_t i1;
+      uint32_t i2;
+      uint32_t i3;
+      uint32_t i4;
+      uint32_t i5;
+    };
+  };
+
+  struct RuleHash {
+    std::size_t operator()(const Rule& rule) const noexcept {
+      std::size_t h = 0xcbf29ce484222325;
+      h ^= static_cast<std::size_t>(rule.i1) + 0x9e3779b9 + (h << 6) + (h >> 2);
+      h ^= static_cast<std::size_t>(rule.i2) + 0x9e3779b9 + (h << 6) + (h >> 2);
+      h ^= static_cast<std::size_t>(rule.i3) + 0x9e3779b9 + (h << 6) + (h >> 2);
+      h ^= static_cast<std::size_t>(rule.i4) + 0x9e3779b9 + (h << 6) + (h >> 2);
+      h ^= static_cast<std::size_t>(rule.i5) + 0x9e3779b9 + (h << 6) + (h >> 2);
+      return h;
+    }
+  };
+
+  struct RuleEqual {
+    bool operator()(const Rule& a, const Rule& b) const noexcept {
+      return a.i1 == b.i1 && a.i2 == b.i2 && a.i3 == b.i3 && a.i4 == b.i4 &&
+             a.i5 == b.i5;
+    }
+  };
 }  // namespace compiler

@@ -60,6 +60,6 @@ namespace compiler {
      *
      * @return std::string
      */
-    std::string toString();
+    std::string to_string();
   };
 }  // namespace compiler

@@ -18,7 +18,7 @@ namespace compiler {
     CONTINUE,
     DEFAULT,
     INSTANCEOF,
-    WHEN,
+    WHEN,  // Case of cool
 
     // Storage specifiers
     STATIC,
@@ -136,52 +136,7 @@ namespace compiler {
      * @param keyword
      * @return str
      */
-    static std::string_view from(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a control flow keyword.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isControlFlow(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a storage specifier.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isStorageSpecifier(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a function specifier.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isFunctionSpecifier(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a memory management keyword.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isMemoryManagement(Keyword kw);
-
-    /**
-     * @brief Checks if a keyword is a type specifier.
-     *
-     * @param kw
-     * @return true
-     * @return false
-     */
-    static bool isTypeSpecifier(Keyword kw);
+    static std::string_view to_string(Keyword kw);
   };
 
 }  // namespace compiler

@@ -23,17 +23,17 @@ namespace compiler {
       if (!result) {
         LexerError error = result.error();
         std::cerr << "Lexer Error at line " << error.line << ", col "
-                  << error.pos << ": " << error.toString() << "\n";
-        break;
-      }
-
-      // If we reached the end, stop filling the buffer
-      if ((*result).type == TokenType::ENDOF) {
+                  << error.pos << ": " << error.to_string() << "\n";
         break;
       }
 
       // Fill the buffer and move to the next slot.
       buffer[bpos++] = *result;
+
+      // If we reached the end, stop filling the buffer
+      if ((*result).type == TokenType::ENDOF) {
+        break;
+      }
     } while (bpos != buffer_size);
 
     // Back to start
