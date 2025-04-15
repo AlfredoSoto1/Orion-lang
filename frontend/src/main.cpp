@@ -363,10 +363,15 @@ int main() {
   // )",
   //                 "TOKEN STREAM TEST");
 
-  run_all_tests();
+  // run_all_tests();
+
+  // testParser(R"(
+  //   a + b
+  // )",
+  //            "PARSER TEST");
 
   testParser(R"(
-    a + b
+    if (a) a; // if ( EXPR ) BLOCK
   )",
              "PARSER TEST");
 

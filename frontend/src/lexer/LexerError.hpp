@@ -48,7 +48,7 @@ namespace compiler {
    * @brief
    *
    */
-  class LexerError {
+  class LexerError final {
   public:
     uint32_t line;
     uint32_t pos;

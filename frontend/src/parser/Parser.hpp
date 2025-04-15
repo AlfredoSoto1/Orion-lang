@@ -42,7 +42,6 @@ namespace compiler {
     // ASTArena ast_arena;
 
     std::vector<Symbol> reduction_stack;
-    std::vector<ParserError> errors;
     std::unordered_map<Rule, ReductionHandler, RuleHash, RuleEqual> rt_handlers;
 
   private:

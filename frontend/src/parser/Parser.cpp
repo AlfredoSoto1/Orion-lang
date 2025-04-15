@@ -5,7 +5,7 @@
 namespace compiler {
 
   Parser::Parser(TokenStream& tokens) noexcept
-      : tokens(tokens), reduction_stack(), rt_handlers(), errors() {
+      : tokens(tokens), reduction_stack(), rt_handlers() {
     // Build rule table following grammar from Storage AST
     populateRuleTable();
   }
@@ -24,6 +24,12 @@ namespace compiler {
       shift();
 
     } while (true);
+
+    if (reduction_stack.size() != 1 ||
+        reduction_stack.back().type != Symbol::Type::NON_TERMINAL) {
+      ParserError{ParserErrorType::INCOMPLETE_TREE_REDUCTION, {}};
+      return;
+    }
   }
 
   void Parser::shift() {
@@ -32,8 +38,7 @@ namespace compiler {
 
     // Validate if token has no defect to continue
     if (!result) {
-      LexerError error = result.error();
-      errors.emplace_back(ParserErrorType::LEXER_ERROR, error);
+      ParserError{ParserErrorType::LEXER_ERROR, result.error()};
       return;
     }
 
@@ -45,8 +50,7 @@ namespace compiler {
       // cannot match token to a symbol
       // Note: This should never happen. This is because a defect token must've
       // been handled in previous if statement.
-      errors.emplace_back(ParserErrorType::UNEXPECTED_SYMBOL,
-                          std::optional<LexerError>{});
+      ParserError{ParserErrorType::UNKNOWN_SYMBOL, {}};
       return;
     }
 
@@ -57,17 +61,22 @@ namespace compiler {
   bool Parser::reduce() {
     bool reduced = false;
 
+    // Scan for a possible symbol combination starting from the 10th to 1rst
     for (int len = std::min(10, static_cast<int>(reduction_stack.size()));
          len >= 1; --len) {
+      // Check if the symbols to be scanned are greater than the maxium amount
+      // of symbols reduced.
       if (len > reduction_stack.size()) {
         return false;
       }
 
+      // Build the rule from the sequence of symbols
       Rule candidate{};
       for (int i = 0; i < len; ++i)
         candidate.symbols[i] =
             reduction_stack[reduction_stack.size() - len + i];
 
+      // Check if the grammar rule exists.
       auto it = rt_handlers.find(candidate);
       if (it == rt_handlers.end()) {
         continue;
@@ -75,6 +84,11 @@ namespace compiler {
 
       // Apply reduction
       Symbol sym = it->second(*this);
+
+      // If the symbol is part of a bigger context, skip this reduction
+      if (sym.type == Symbol::Type::BIG_CONTEXT) {
+        return false;
+      }
 
       // Push the new reduced grammar into stack
       reduction_stack.push_back(sym);
@@ -311,6 +325,13 @@ namespace compiler {
     rt_handlers[makeRule({makePn(PU::LPAREN),  //
                           makeNt(NT::EXPR),    //
                           makePn(PU::RPAREN)})] = [this](Parser&) {
+      // Check if it forms part of a bigger context
+      if (reduction_stack.size() > 3) {
+        if (reduction_stack[reduction_stack.size() - 4].type ==
+            Symbol::Type::KEYWORD) {
+          return Symbol{Symbol::Type::BIG_CONTEXT};
+        }
+      }
       reduction_stack.pop_back();
       reduction_stack.pop_back();
       reduction_stack.pop_back();

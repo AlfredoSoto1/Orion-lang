@@ -16,6 +16,7 @@ namespace compiler {
     UNRECOGNIZED_RULE,  // Rule not found in the rule table
 
     // Syntax-related
+    UNKNOWN_SYMBOL,          // Unknown symbol passed by lexer
     UNEXPECTED_SYMBOL,       // Symbol not expected in current context
     UNEXPECTED_NONTERMINAL,  // Found a non-terminal where it shouldn't be
     UNEXPECTED_TERMINAL,     // Found a terminal where it shouldn't be
@@ -24,9 +25,11 @@ namespace compiler {
     MISSING_BRACE,           // Expected '{' or '}' not found
 
     // Grammar issues
-    AMBIGUOUS_GRAMMAR,       // Multiple possible reductions (not handled)
-    NO_VALID_REDUCTION,      // Could not reduce symbol sequence into grammar
-    EMPTY_RULE_NOT_ALLOWED,  // Empty rule used in invalid context
+    AMBIGUOUS_GRAMMAR,          // Multiple possible reductions (not handled)
+    NO_VALID_REDUCTION,         // Could not reduce symbol sequence into grammar
+    EMPTY_RULE_NOT_ALLOWED,     // Empty rule used in invalid context
+    INCOMPLETE_TREE_REDUCTION,  // Reduction tree did not converged into a
+                                // single node
 
     // Expression-specific
     INVALID_EXPRESSION,         // Expression is malformed
@@ -52,7 +55,7 @@ namespace compiler {
     REDUCTION_FAILED,  // Handler failed to produce a result
   };
 
-  class ParserError {
+  class ParserError final {
   public:
     ParserErrorType type;
     std::optional<LexerError> lexer_error;

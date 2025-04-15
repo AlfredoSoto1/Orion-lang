@@ -18,8 +18,7 @@ namespace compiler {
   //
   // param → type IDENTIFIER
   //
-  // block → stmt
-  //       | { stmt_list }
+  // block → { stmt_list }
   //
   // stmt_list → stmt stmt_list
   //           | stmt
@@ -121,14 +120,9 @@ namespace compiler {
     Index next;
   };
 
-  // block → stmt
-  //       | { stmt_list }
+  // block → { stmt_list }
   struct BlockAST {
-    enum class Type : uint8_t {
-      STMT,
-      LIST,
-    } type;
-    Index block;
+    Index stmt_list;
   };
 
   // param → type IDENTIFIER
@@ -237,6 +231,7 @@ namespace compiler {
   struct Symbol {
     enum class Type : uint8_t {
       UNKNOWN = 0,
+      BIG_CONTEXT,
       NON_TERMINAL,
       KEYWORD,
       IDENTIFIER,
