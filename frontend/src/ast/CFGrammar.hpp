@@ -20,9 +20,20 @@ namespace compiler {
     CFGrammar() noexcept;
     ~CFGrammar() = default;
 
+    /**
+     * @brief Check if the grammar is ambiguous.
+     *
+     * @return true
+     * @return false
+     */
+    bool isAmbiguous() const noexcept { return is_ambiguous; }
+
   public:
     using ReductionHandler = std::function<Symbol(Parser&)>;
     std::unordered_map<Rule, ReductionHandler, RuleHash, RuleEqual> table;
+
+  private:
+    bool is_ambiguous;
 
   private:
     Symbol makeId() const noexcept;

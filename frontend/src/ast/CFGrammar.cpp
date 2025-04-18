@@ -1,12 +1,19 @@
 #include "CFGrammar.hpp"
 
+#include <iostream>
+
 #include "parser/Parser.hpp"
 
-#define rule(...) table[makeRule({__VA_ARGS__})] = [this](Parser & parser)
+#define rule(...)                                                 \
+  if (!table.contains(makeRule({__VA_ARGS__})) || is_ambiguous) { \
+    std::cerr << "Grammar is ambigous" << std::endl;              \
+    is_ambiguous = true;                                          \
+    return;                                                       \
+  }                                                               \
+  table[makeRule({__VA_ARGS__})] = [this](Parser & parser)
 
 namespace compiler {
-
-  CFGrammar::CFGrammar() noexcept {
+  CFGrammar::CFGrammar() noexcept : is_ambiguous(false) {
     // Build rule table following grammar from Storage AST
     postfix_expr();
     primary_expr();
@@ -985,12 +992,11 @@ namespace compiler {
       return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
     };
 
-    // THIS NEEDS TO BE AN EMPTY PRODUCTION
-    // // specifier_qualifier_list → type_specifier
-    // rule(makeNt(NT::TYPE_SPECIFIER)) {
-    //   parser.reduction_stack.pop_back();
-    //   return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
-    // };
+    // specifier_qualifier_list → type_specifier
+    rule(makeNt(NT::TYPE_SPECIFIER)) {
+      parser.reduction_stack.pop_back();
+      return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
+    };
 
     // specifier_qualifier_list → type_qualifier specifier_qualifier_list
     rule(makeNt(NT::TYPE_QUALIFIER),  //
@@ -1000,12 +1006,11 @@ namespace compiler {
       return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
     };
 
-    // THIS NEEDS TO BE AN EMPTY PRODUCTION
-    // // specifier_qualifier_list → type_qualifier
-    // rule(makeNt(NT::TYPE_QUALIFIER)) {
-    //   parser.reduction_stack.pop_back();
-    //   return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
-    // };
+    // specifier_qualifier_list → type_qualifier
+    rule(makeNt(NT::TYPE_QUALIFIER)) {
+      parser.reduction_stack.pop_back();
+      return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
+    };
   }
 
   void CFGrammar::struct_declarator_list() {
