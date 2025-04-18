@@ -15,6 +15,7 @@ namespace compiler {
     SWITCH,
     CASE,
     BREAK,
+    GOTO,
     CONTINUE,
     DEFAULT,
     INSTANCEOF,

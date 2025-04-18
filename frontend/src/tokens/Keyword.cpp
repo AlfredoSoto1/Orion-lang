@@ -14,6 +14,7 @@ namespace compiler {
         {"switch", Keyword::SWITCH},
         {"case", Keyword::CASE},
         {"break", Keyword::BREAK},
+        {"goto", Keyword::GOTO},
         {"continue", Keyword::CONTINUE},
         {"default", Keyword::DEFAULT},
         {"instanceof", Keyword::INSTANCEOF},
@@ -86,6 +87,8 @@ namespace compiler {
         return "case";
       case Keyword::BREAK:
         return "break";
+      case Keyword::GOTO:
+        return "goto";
       case Keyword::CONTINUE:
         return "continue";
       case Keyword::DEFAULT:

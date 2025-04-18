@@ -12,6 +12,7 @@ namespace compiler {
     HASH,            // #
     DOLLAR,          // $
     DOT,             // .
+    ELLIPSIS,        // ...
     COMMA,           // ,
     COLON,           // :
     SEMI_COLON,      // ;

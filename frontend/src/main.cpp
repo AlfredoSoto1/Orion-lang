@@ -65,12 +65,12 @@ void print_stmt(const ASTStorage& ast, Index stmt_idx, int depth = 0) {
 void print_block(const ASTStorage& ast, Index block_idx, int depth = 0) {
   const BlockAST& block = ast.blocks[block_idx];
   print_indent(depth);
-  if (block.type == BlockAST::Type::STMT) {
-    std::cout << "Block:\n";
-    print_stmt(ast, block.block, depth + 1);
-  } else {
-    std::cout << "{ stmt_list } Block: <not implemented>\n";
-  }
+  // if (block.type == BlockAST::Type::STMT) {
+  //   std::cout << "Block:\n";
+  //   print_stmt(ast, block.block, depth + 1);
+  // } else {
+  //   std::cout << "{ stmt_list } Block: <not implemented>\n";
+  // }
 }
 
 void print_function(const ASTStorage& ast, Index fn_idx, int depth = 0) {
@@ -197,7 +197,7 @@ void test_function(ASTStorage& ast) {
   // Block with return statement
   Index stmt = static_cast<Index>(ast.stmts.size()) - 1;
   Index block = static_cast<Index>(ast.blocks.size());
-  ast.blocks.push_back({BlockAST::Type::STMT, stmt});
+  // ast.blocks.push_back({BlockAST::Type::STMT, stmt});
 
   // Function
   Index fn = static_cast<Index>(ast.functions.size());
@@ -336,9 +336,16 @@ void testParser(const std::string& input, const std::string& testName) {
   Lexer lexer(input);
   std::cout << "Testing input: \"" << input << "\" (" << testName << ")\n";
 
+  // Create a TokenStream with a buffer size of 10
   TokenStream stream = TokenStream(lexer, 10);
 
-  Parser parser = Parser(stream);
+  // Create a parser with the TokenStream and the grammar
+  // Note: The grammar should be defined in the CFGrammar class
+  // and should contain the rules for parsing the input.
+  CFGrammar grammar = CFGrammar();
+
+  // Create a parser instance
+  Parser parser = Parser(stream, grammar);
   parser.parse();
 }
 
@@ -371,7 +378,7 @@ int main() {
   //            "PARSER TEST");
 
   testParser(R"(
-    if (a) a; // if ( EXPR ) BLOCK
+    void main() {}
   )",
              "PARSER TEST");
 

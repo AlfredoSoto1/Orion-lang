@@ -4,9 +4,9 @@
 #include <iostream>
 #include <optional>
 #include <unordered_map>
-#include <variant>
 
 #include "ParserError.hpp"
+#include "ast/CFGrammar.hpp"
 #include "ast/StorageAST.hpp"
 #include "tokens/TokenStream.hpp"
 
@@ -25,7 +25,7 @@ namespace compiler {
      *
      * @param tokens
      */
-    explicit Parser(TokenStream& tokens) noexcept;
+    explicit Parser(TokenStream& tokens, const CFGrammar& grammar) noexcept;
     ~Parser() noexcept = default;
 
     /**
@@ -35,30 +35,21 @@ namespace compiler {
     void parse();
 
   private:
-    using ReductionHandler = std::function<Symbol(Parser&)>;
+    friend class CFGrammar;
 
+  private:
     TokenStream& tokens;
+    const CFGrammar& grammar;
+
     // ASTStack ast_stack;
     // ASTArena ast_arena;
 
     std::vector<Symbol> reduction_stack;
-    std::unordered_map<Rule, ReductionHandler, RuleHash, RuleEqual> rt_handlers;
 
   private:
     void shift();
     bool reduce();
 
-  private:
     Symbol tokenToSymbol(const Token& token) const noexcept;
-
-    Symbol makeId() const noexcept;
-    Symbol makeLt() const noexcept;
-    Symbol makeKw(Keyword k) const noexcept;
-    Symbol makePn(Punctuator p) const noexcept;
-    Symbol makeNt(NonTerminal nt) const noexcept;
-
-    Rule makeRule(std::initializer_list<Symbol> syms) const noexcept;
-
-    void populateRuleTable() noexcept;
   };
 }  // namespace compiler

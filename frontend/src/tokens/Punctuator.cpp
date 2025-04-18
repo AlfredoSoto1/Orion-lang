@@ -10,6 +10,7 @@ namespace compiler {
                           {"#", Punctuator::HASH},
                           {"$", Punctuator::DOLLAR},
                           {".", Punctuator::DOT},
+                          {"...", Punctuator::ELLIPSIS},
                           {",", Punctuator::COMMA},
                           {":", Punctuator::COLON},
                           {";", Punctuator::SEMI_COLON},
@@ -75,6 +76,8 @@ namespace compiler {
         return "$";
       case Punctuator::DOT:
         return ".";
+      case Punctuator::ELLIPSIS:
+        return "...";
       case Punctuator::COMMA:
         return ",";
       case Punctuator::COLON:
