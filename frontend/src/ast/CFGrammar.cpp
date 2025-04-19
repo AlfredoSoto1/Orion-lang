@@ -4,15 +4,18 @@
 
 #include "parser/Parser.hpp"
 
-#define rule(...)                                                 \
-  if (!table.contains(makeRule({__VA_ARGS__})) || is_ambiguous) { \
-    std::cerr << "Grammar is ambigous" << std::endl;              \
-    is_ambiguous = true;                                          \
-    return;                                                       \
-  }                                                               \
-  table[makeRule({__VA_ARGS__})] = [this](Parser & parser)
+#define rule(...) table[makeRule({__VA_ARGS__})] = [this]() -> Symbol
+
+// #define rule(...)                                                 \
+//   if (!table.contains(makeRule({__VA_ARGS__})) || is_ambiguous) { \
+//     std::cerr << "Grammar is ambigous" << std::endl;              \
+//     is_ambiguous = true;                                          \
+//     return;                                                       \
+//   }                                                               \
+//   table[makeRule({__VA_ARGS__})] = [this](Parser & parser)
 
 namespace compiler {
+
   CFGrammar::CFGrammar() noexcept : is_ambiguous(false) {
     // Build rule table following grammar from Storage AST
     postfix_expr();
@@ -136,23 +139,14 @@ namespace compiler {
     rule(makePn(PU::LPAREN),  //
          makeNt(NT::EXPR),    //
          makePn(PU::RPAREN)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::PRIMARY_EXPR);
     };
 
     // primary-expr → IDENTIFIER
-    rule(makeId()) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::PRIMARY_EXPR);
-    };
+    rule(makeId()) { return makeNt(NT::PRIMARY_EXPR); };
 
     // primary-expr → LITERAL
-    rule(makeLt()) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::PRIMARY_EXPR);
-    };
+    rule(makeLt()) { return makeNt(NT::PRIMARY_EXPR); };
   }
 
   void CFGrammar::postfix_expr() {
@@ -161,20 +155,13 @@ namespace compiler {
     using PU = Punctuator;
 
     // postfix-expr → primary-expr
-    rule(makeNt(NT::PRIMARY_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::POSTFIX_EXPR);
-    };
+    rule(makeNt(NT::PRIMARY_EXPR)) { return makeNt(NT::POSTFIX_EXPR); };
 
     // postfix-expr → postfix-expr [ expr ]
     rule(makeNt(NT::POSTFIX_EXPR),  //
          makePn(PU::LBRACKET),      //
          makeNt(NT::EXPR),          //
          makePn(PU::RBRACKET)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POSTFIX_EXPR);
     };
 
@@ -182,9 +169,6 @@ namespace compiler {
     rule(makeNt(NT::POSTFIX_EXPR),  //
          makePn(PU::LPAREN),        //
          makePn(PU::RPAREN)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POSTFIX_EXPR);
     };
 
@@ -193,10 +177,6 @@ namespace compiler {
          makePn(PU::LPAREN),         //
          makeNt(NT::ARG_EXPR_LIST),  //
          makePn(PU::RPAREN)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POSTFIX_EXPR);
     };
 
@@ -204,9 +184,6 @@ namespace compiler {
     rule(makeNt(NT::POSTFIX_EXPR),  //
          makePn(PU::DOT),           //
          makeId()) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POSTFIX_EXPR);
     };
 
@@ -214,9 +191,6 @@ namespace compiler {
     rule(makeNt(NT::POSTFIX_EXPR),  //
          makePn(PU::RARROW),        //
          makeId()) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POSTFIX_EXPR);
     };
 
@@ -224,9 +198,6 @@ namespace compiler {
     rule(makeNt(NT::POSTFIX_EXPR),  //
          makePn(PU::PLUS_PLUS),     //
          makeId()) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POSTFIX_EXPR);
     };
 
@@ -234,9 +205,6 @@ namespace compiler {
     rule(makeNt(NT::POSTFIX_EXPR),  //
          makePn(PU::DASH_DASH),     //
          makeId()) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POSTFIX_EXPR);
     };
   }
@@ -246,18 +214,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // arg_expr_list → assignment_expr
-    rule(makeNt(NT::ASSIGNMENT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::ARG_EXPR_LIST);
-    };
+    rule(makeNt(NT::ASSIGNMENT_EXPR)) { return makeNt(NT::ARG_EXPR_LIST); };
 
     // arg_expr_list → arg_expr_list , assignment_expr
     rule(makeNt(NT::ARG_EXPR_LIST),  //
          makePn(PU::COMMA),          //
          makeNt(NT::ASSIGNMENT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ARG_EXPR_LIST);
     };
   }
@@ -268,36 +230,25 @@ namespace compiler {
     using KW = Keyword;
 
     // unary_expr → postfix_expr
-    rule(makeNt(NT::POSTFIX_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::UNARY_EXPR);
-    };
+    rule(makeNt(NT::POSTFIX_EXPR)) { return makeNt(NT::UNARY_EXPR); };
 
     // unary_expr → ++ unary_expr
     rule(makePn(PU::PLUS_PLUS), makeNt(NT::UNARY_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::UNARY_EXPR);
     };
 
     // unary_expr → -- unary_expr
     rule(makePn(PU::DASH_DASH), makeNt(NT::UNARY_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::UNARY_EXPR);
     };
 
     // unary_expr → unary_op cast_expr
     rule(makeNt(NT::UNARY_OP), makeNt(NT::CAST_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::UNARY_EXPR);
     };
 
     // unary_expr → sizeof unary_expr
     rule(makeKw(KW::SIZEOF), makeNt(NT::UNARY_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::UNARY_EXPR);
     };
 
@@ -306,10 +257,6 @@ namespace compiler {
          makePn(PU::LPAREN),     //
          makeNt(NT::TYPE_NAME),  //
          makePn(PU::RPAREN)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::UNARY_EXPR);
     };
   }
@@ -321,10 +268,7 @@ namespace compiler {
     // unary_op → & | * | + | - | ~ | !
     for (auto op :
          {PU::BAND, PU::STAR, PU::PLUS, PU::DASH, PU::BNOT, PU::NOT}) {
-      rule(makePn(op)) {
-        parser.reduction_stack.pop_back();
-        return makeNt(NT::UNARY_OP);
-      };
+      rule(makePn(op)) { return makeNt(NT::UNARY_OP); };
     }
   }
 
@@ -333,20 +277,13 @@ namespace compiler {
     using PU = Punctuator;
 
     // cast_expr → unary_expr
-    rule(makeNt(NT::UNARY_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::CAST_EXPR);
-    };
+    rule(makeNt(NT::UNARY_EXPR)) { return makeNt(NT::CAST_EXPR); };
 
     // cast_expr → ( type_name ) cast_expr
     rule(makePn(PU::LPAREN),     //
          makeNt(NT::TYPE_NAME),  //
          makePn(PU::RPAREN),     //
          makeNt(NT::CAST_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::CAST_EXPR);
     };
   }
@@ -356,18 +293,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // multiplicative_expr → cast_expr
-    rule(makeNt(NT::CAST_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::MULTIPLICATIVE_EXPR);
-    };
+    rule(makeNt(NT::CAST_EXPR)) { return makeNt(NT::MULTIPLICATIVE_EXPR); };
 
     // multiplicative_expr → multiplicative_expr * cast_expr
     rule(makeNt(NT::MULTIPLICATIVE_EXPR),  //
          makePn(PU::STAR),                 //
          makeNt(NT::CAST_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::MULTIPLICATIVE_EXPR);
     };
 
@@ -375,9 +306,6 @@ namespace compiler {
     rule(makeNt(NT::MULTIPLICATIVE_EXPR),  //
          makePn(PU::SLASH),                //
          makeNt(NT::CAST_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::MULTIPLICATIVE_EXPR);
     };
 
@@ -385,9 +313,6 @@ namespace compiler {
     rule(makeNt(NT::MULTIPLICATIVE_EXPR),  //
          makePn(PU::MOD),                  //
          makeNt(NT::CAST_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::MULTIPLICATIVE_EXPR);
     };
   }
@@ -397,18 +322,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // additive_expr → multiplicative_expr
-    rule(makeNt(NT::MULTIPLICATIVE_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::ADDITIVE_EXPR);
-    };
+    rule(makeNt(NT::MULTIPLICATIVE_EXPR)) { return makeNt(NT::ADDITIVE_EXPR); };
 
     // additive_expr → additive_expr + multiplicative_expr
     rule(makeNt(NT::ADDITIVE_EXPR),  //
          makePn(PU::PLUS),           //
          makeNt(NT::MULTIPLICATIVE_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ADDITIVE_EXPR);
     };
 
@@ -416,9 +335,6 @@ namespace compiler {
     rule(makeNt(NT::ADDITIVE_EXPR),  //
          makePn(PU::DASH),           //
          makeNt(NT::MULTIPLICATIVE_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ADDITIVE_EXPR);
     };
   }
@@ -428,18 +344,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // shift_expr → additive_expr
-    rule(makeNt(NT::ADDITIVE_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::SHIFT_EXPR);
-    };
+    rule(makeNt(NT::ADDITIVE_EXPR)) { return makeNt(NT::SHIFT_EXPR); };
 
     // shift_expr → shift_expr << additive_expr
     rule(makeNt(NT::SHIFT_EXPR),  //
          makePn(PU::LSHIFT),      //
          makeNt(NT::ADDITIVE_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SHIFT_EXPR);
     };
 
@@ -447,9 +357,6 @@ namespace compiler {
     rule(makeNt(NT::SHIFT_EXPR),  //
          makePn(PU::RSHIFT),      //
          makeNt(NT::ADDITIVE_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SHIFT_EXPR);
     };
   }
@@ -459,18 +366,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // relational_expr → shift_expr
-    rule(makeNt(NT::SHIFT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::RELATIONAL_EXPR);
-    };
+    rule(makeNt(NT::SHIFT_EXPR)) { return makeNt(NT::RELATIONAL_EXPR); };
 
     // relational_expr → relational_expr < shift_expr
     rule(makeNt(NT::RELATIONAL_EXPR),  //
          makePn(PU::LT),               //
          makeNt(NT::SHIFT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::RELATIONAL_EXPR);
     };
 
@@ -478,9 +379,6 @@ namespace compiler {
     rule(makeNt(NT::RELATIONAL_EXPR),  //
          makePn(PU::GT),               //
          makeNt(NT::SHIFT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::RELATIONAL_EXPR);
     };
 
@@ -488,9 +386,6 @@ namespace compiler {
     rule(makeNt(NT::RELATIONAL_EXPR),  //
          makePn(PU::LTE),              //
          makeNt(NT::SHIFT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::RELATIONAL_EXPR);
     };
 
@@ -498,9 +393,6 @@ namespace compiler {
     rule(makeNt(NT::RELATIONAL_EXPR),  //
          makePn(PU::GTE),              //
          makeNt(NT::SHIFT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::RELATIONAL_EXPR);
     };
   }
@@ -510,18 +402,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // equality_expr → relational_expr
-    rule(makeNt(NT::RELATIONAL_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::EQUALITY_EXPR);
-    };
+    rule(makeNt(NT::RELATIONAL_EXPR)) { return makeNt(NT::EQUALITY_EXPR); };
 
     // equality_expr → equality_expr == relational_expr
     rule(makeNt(NT::EQUALITY_EXPR),  //
          makePn(PU::EQ_EQ),          //
          makeNt(NT::RELATIONAL_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::EQUALITY_EXPR);
     };
 
@@ -529,9 +415,6 @@ namespace compiler {
     rule(makeNt(NT::EQUALITY_EXPR),  //
          makePn(PU::NEQ),            //
          makeNt(NT::RELATIONAL_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::EQUALITY_EXPR);
     };
   }
@@ -541,18 +424,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // and_expr → equality_expr
-    rule(makeNt(NT::EQUALITY_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::AND_EXPR);
-    };
+    rule(makeNt(NT::EQUALITY_EXPR)) { return makeNt(NT::AND_EXPR); };
 
     // and_expr → and_expr & equality_expr
     rule(makeNt(NT::AND_EXPR),  //
          makePn(PU::BAND),      //
          makeNt(NT::EQUALITY_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::AND_EXPR);
     };
   }
@@ -562,18 +439,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // exclusive_or_expr → and_expr
-    rule(makeNt(NT::AND_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::EXCLUSIVE_OR_EXPR);
-    };
+    rule(makeNt(NT::AND_EXPR)) { return makeNt(NT::EXCLUSIVE_OR_EXPR); };
 
     // exclusive_or_expr → exclusive_or_expr ^ and_expr
     rule(makeNt(NT::EXCLUSIVE_OR_EXPR),  //
          makePn(PU::BXOR),               //
          makeNt(NT::AND_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::EXCLUSIVE_OR_EXPR);
     };
   }
@@ -584,7 +455,6 @@ namespace compiler {
 
     // inclusive_or_expr → exclusive_or_expr
     rule(makeNt(NT::EXCLUSIVE_OR_EXPR)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::INCLUSIVE_OR_EXPR);
     };
 
@@ -592,9 +462,6 @@ namespace compiler {
     rule(makeNt(NT::INCLUSIVE_OR_EXPR),  //
          makePn(PU::BOR),                //
          makeNt(NT::EXCLUSIVE_OR_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::INCLUSIVE_OR_EXPR);
     };
   }
@@ -605,7 +472,6 @@ namespace compiler {
 
     // logical_and_expr → inclusive_or_expr
     rule(makeNt(NT::INCLUSIVE_OR_EXPR)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::LOGICAL_AND_EXPR);
     };
 
@@ -613,9 +479,6 @@ namespace compiler {
     rule(makeNt(NT::LOGICAL_AND_EXPR),  //
          makePn(PU::AND),               //
          makeNt(NT::INCLUSIVE_OR_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::LOGICAL_AND_EXPR);
     };
   }
@@ -625,18 +488,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // logical_or_expr → logical_and_expr
-    rule(makeNt(NT::LOGICAL_AND_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::LOGICAL_OR_EXPR);
-    };
+    rule(makeNt(NT::LOGICAL_AND_EXPR)) { return makeNt(NT::LOGICAL_OR_EXPR); };
 
     // logical_or_expr → logical_or_expr || logical_and_expr
     rule(makeNt(NT::LOGICAL_OR_EXPR),  //
          makePn(PU::OR),               //
          makeNt(NT::LOGICAL_AND_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::LOGICAL_OR_EXPR);
     };
   }
@@ -646,10 +503,7 @@ namespace compiler {
     using PU = Punctuator;
 
     // conditional_expr → logical_or_expr
-    rule(makeNt(NT::LOGICAL_OR_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::CONDITIONAL_EXPR);
-    };
+    rule(makeNt(NT::LOGICAL_OR_EXPR)) { return makeNt(NT::CONDITIONAL_EXPR); };
 
     // conditional_expr → logical_or_expr ? expr : conditional_expr
     rule(makeNt(NT::LOGICAL_OR_EXPR),  //
@@ -657,11 +511,6 @@ namespace compiler {
          makeNt(NT::EXPR),             //
          makePn(PU::COLON),            //
          makeNt(NT::CONDITIONAL_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::CONDITIONAL_EXPR);
     };
   }
@@ -671,18 +520,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // assignment_expr → conditional_expr
-    rule(makeNt(NT::CONDITIONAL_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::ASSIGNMENT_EXPR);
-    };
+    rule(makeNt(NT::CONDITIONAL_EXPR)) { return makeNt(NT::ASSIGNMENT_EXPR); };
 
     // assignment_expr → unary_expr assignment_operator assignment_expr
     rule(makeNt(NT::UNARY_EXPR),     //
          makeNt(NT::ASSIGNMENT_OP),  //
          makeNt(NT::ASSIGNMENT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ASSIGNMENT_EXPR);
     };
   }
@@ -694,10 +537,7 @@ namespace compiler {
     for (auto op : {PU::EQ, PU::STAR_EQ, PU::SLASH_EQ, PU::MOD_EQ, PU::PLUS_EQ,
                     PU::DASH_EQ, PU::LSHIFT_EQ, PU::RSHIFT_EQ, PU::AND_EQ,
                     PU::OR_EQ, PU::XOR_EQ}) {
-      rule(makePn(op)) {
-        parser.reduction_stack.pop_back();
-        return makeNt(NT::ASSIGNMENT_OP);
-      };
+      rule(makePn(op)) { return makeNt(NT::ASSIGNMENT_OP); };
     }
   }
 
@@ -706,18 +546,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // expr → assignment_expr
-    rule(makeNt(NT::ASSIGNMENT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::EXPR);
-    };
+    rule(makeNt(NT::ASSIGNMENT_EXPR)) { return makeNt(NT::EXPR); };
 
     // expr → expr , assignment_expr
     rule(makeNt(NT::EXPR),   //
          makePn(PU::COMMA),  //
          makeNt(NT::ASSIGNMENT_EXPR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::EXPR);
     };
   }
@@ -726,10 +560,7 @@ namespace compiler {
     using NT = NonTerminal;
 
     // constant_expr → conditional_expr
-    rule(makeNt(NT::CONDITIONAL_EXPR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::CONSTANT_EXPR);
-    };
+    rule(makeNt(NT::CONDITIONAL_EXPR)) { return makeNt(NT::CONSTANT_EXPR); };
   }
 
   void CFGrammar::decl() {
@@ -738,8 +569,6 @@ namespace compiler {
 
     // decl → decl_specifiers ;
     rule(makeNt(NT::DECLARATION_SPECIFIERS), makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DECLARATION);
     };
 
@@ -747,9 +576,6 @@ namespace compiler {
     rule(makeNt(NT::DECLARATION_SPECIFIERS),  //
          makeNt(NT::INIT_DECLARATOR_LIST),    //
          makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DECLARATION);
     };
   }
@@ -759,42 +585,29 @@ namespace compiler {
 
     // decl_specifiers → storage_class_specifier
     rule(makeNt(NT::STORAGE_CLASS_SPECIFIER)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DECL_SPECIFIERS);
     };
 
     // decl_specifiers → storage_class_specifier declaration_specifiers
     rule(makeNt(NT::STORAGE_CLASS_SPECIFIER),  //
          makeNt(NT::DECL_SPECIFIERS)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DECL_SPECIFIERS);
     };
 
     // decl_specifiers → type_specifier
-    rule(makeNt(NT::TYPE_SPECIFIER)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::DECL_SPECIFIERS);
-    };
+    rule(makeNt(NT::TYPE_SPECIFIER)) { return makeNt(NT::DECL_SPECIFIERS); };
 
     // decl_specifiers → type_specifier declaration_specifiers
     rule(makeNt(NT::TYPE_SPECIFIER),  //
          makeNt(NT::DECL_SPECIFIERS)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DECL_SPECIFIERS);
     };
 
     // decl_specifiers → type_qualifier
-    rule(makeNt(NT::TYPE_QUALIFIER)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::DECL_SPECIFIERS);
-    };
+    rule(makeNt(NT::TYPE_QUALIFIER)) { return makeNt(NT::DECL_SPECIFIERS); };
 
     // decl_specifiers → type_qualifier declaration_specifiers
     rule(makeNt(NT::TYPE_QUALIFIER), makeNt(NT::DECL_SPECIFIERS)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DECL_SPECIFIERS);
     };
   }
@@ -804,18 +617,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // init_decl_list → init_declarator
-    rule(makeNt(NT::INIT_DECL)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::INIT_DECL_LIST);
-    };
+    rule(makeNt(NT::INIT_DECL)) { return makeNt(NT::INIT_DECL_LIST); };
 
     // init_decl_list → init_declarator_list , init_declarator
     rule(makeNt(NT::INIT_DECL_LIST),  //
          makePn(PU::COMMA),           //
          makeNt(NT::INIT_DECL)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::INIT_DECL_LIST);
     };
   }
@@ -825,18 +632,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // init_decl → declarator
-    rule(makeNt(NT::DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::INIT_DECL);
-    };
+    rule(makeNt(NT::DECLARATOR)) { return makeNt(NT::INIT_DECL); };
 
     // init_decl → declarator = initializer
     rule(makeNt(NT::DECLARATOR),  //
          makePn(PU::EQ),          //
          makeNt(NT::INITIALIZER)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::INIT_DECL);
     };
   }
@@ -847,10 +648,7 @@ namespace compiler {
 
     // storage_class_specifier → typedef | extern | static | auto
     for (auto kw : {KW::TYPEDEF, KW::EXTERN, KW::STATIC, KW::AUTO}) {
-      rule(makeKw(kw)) {
-        parser.reduction_stack.pop_back();
-        return makeNt(NT::STORAGE_CLASS_SPECIFIER);
-      };
+      rule(makeKw(kw)) { return makeNt(NT::STORAGE_CLASS_SPECIFIER); };
     }
   }
 
@@ -863,29 +661,19 @@ namespace compiler {
     // SIGNED | UNSIGNED
     for (auto kw : {KW::VOID, KW::CHAR, KW::SHORT, KW::INT, KW::LONG, KW::FLOAT,
                     KW::DOUBLE, KW::SIGNED, KW::UNSIGNED, KW::BOOL}) {
-      rule(makeKw(kw)) {
-        parser.reduction_stack.pop_back();
-        return makeNt(NT::TYPE_SPECIFIER);
-      };
+      rule(makeKw(kw)) { return makeNt(NT::TYPE_SPECIFIER); };
     }
 
     // type_specifier → struct_or_union_specifier
     rule(makeNt(NT::STRUCT_OR_UNION_SPECIFIER)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::TYPE_SPECIFIER);
     };
 
     // type_specifier → enum_specifier
-    rule(makeNt(NT::ENUM_SPECIFIER)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::TYPE_SPECIFIER);
-    };
+    rule(makeNt(NT::ENUM_SPECIFIER)) { return makeNt(NT::TYPE_SPECIFIER); };
 
     // type_specifier → TYPE_NAME
-    rule(makeNt(NT::TYPE_NAME)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::TYPE_SPECIFIER);
-    };
+    rule(makeNt(NT::TYPE_NAME)) { return makeNt(NT::TYPE_SPECIFIER); };
   }
 
   void CFGrammar::struct_or_union_specifier() {
@@ -900,10 +688,6 @@ namespace compiler {
          makePn(PU::LBRACE),                   //
          makeNt(NT::STRUCT_DECLARATION_LIST),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_OR_UNION_SPECIFIER);
     };
 
@@ -913,16 +697,12 @@ namespace compiler {
          makePn(PU::LBRACE),                   //
          makeNt(NT::STRUCT_DECLARATION_LIST),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_OR_UNION_SPECIFIER);
     };
 
     // struct_or_union_specifier → struct_or_union IDENTIFIER
     rule(makeNt(NT::STRUCT_OR_UNION),  //
          makeId()) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_OR_UNION_SPECIFIER);
     };
   }
@@ -933,16 +713,10 @@ namespace compiler {
     using PU = Punctuator;
 
     // struct_or_union → STRUCT
-    rule(makeKw(KW::STRUCT)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STRUCT_OR_UNION);
-    };
+    rule(makeKw(KW::STRUCT)) { return makeNt(NT::STRUCT_OR_UNION); };
 
     // struct_or_union → UNION
-    rule(makeKw(KW::UNION)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STRUCT_OR_UNION);
-    };
+    rule(makeKw(KW::UNION)) { return makeNt(NT::STRUCT_OR_UNION); };
   }
 
   void CFGrammar::struct_declaration_list() {
@@ -950,15 +724,12 @@ namespace compiler {
 
     // struct_declaration_list → struct_declaration
     rule(makeNt(NT::STRUCT_DECLARATION)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_DECLARATION_LIST);
     };
 
     // struct_declaration_list → struct_declaration_list struct_declaration
     rule(makeNt(NT::STRUCT_DECLARATION_LIST),  //
          makeNt(NT::STRUCT_DECLARATION)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_DECLARATION_LIST);
     };
   }
@@ -972,9 +743,6 @@ namespace compiler {
     rule(makeNt(NT::SPECIFIER_QUALIFIER_LIST),  //
          makeNt(NT::STRUCT_DECLARATOR_LIST),    //
          makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_DECLARATION);
     };
   }
@@ -987,28 +755,22 @@ namespace compiler {
     // specifier_qualifier_list → type_specifier specifier_qualifier_list
     rule(makeNt(NT::TYPE_SPECIFIER),  //
          makeNt(NT::SPECIFIER_QUALIFIER_LIST)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
     };
 
     // specifier_qualifier_list → type_specifier
     rule(makeNt(NT::TYPE_SPECIFIER)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
     };
 
     // specifier_qualifier_list → type_qualifier specifier_qualifier_list
     rule(makeNt(NT::TYPE_QUALIFIER),  //
          makeNt(NT::SPECIFIER_QUALIFIER_LIST)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
     };
 
     // specifier_qualifier_list → type_qualifier
     rule(makeNt(NT::TYPE_QUALIFIER)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SPECIFIER_QUALIFIER_LIST);
     };
   }
@@ -1019,7 +781,6 @@ namespace compiler {
 
     // struct_declarator_list → struct_declarator
     rule(makeNt(NT::STRUCT_DECLARATOR)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_DECLARATOR_LIST);
     };
 
@@ -1027,9 +788,6 @@ namespace compiler {
     rule(makeNt(NT::STRUCT_DECLARATOR_LIST),  //
          makePn(PU::COMMA),                   //
          makeNt(NT::STRUCT_DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_DECLARATOR_LIST);
     };
   }
@@ -1039,16 +797,11 @@ namespace compiler {
     using PU = Punctuator;
 
     // struct_declarator → declarator
-    rule(makeNt(NT::DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STRUCT_DECLARATOR);
-    };
+    rule(makeNt(NT::DECLARATOR)) { return makeNt(NT::STRUCT_DECLARATOR); };
 
     // struct_declarator → ':' constant_expression
     rule(makePn(PU::COLON),  //
          makeNt(NT::CONSTANT_EXPRESSION)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_DECLARATOR);
     };
 
@@ -1056,9 +809,6 @@ namespace compiler {
     rule(makeNt(NT::DECLARATOR),  //
          makePn(PU::COLON),       //
          makeNt(NT::CONSTANT_EXPRESSION)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STRUCT_DECLARATOR);
     };
   }
@@ -1073,10 +823,6 @@ namespace compiler {
          makePn(PU::LBRACE),           //
          makeNt(NT::ENUMERATOR_LIST),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ENUM_SPECIFIER);
     };
 
@@ -1086,17 +832,12 @@ namespace compiler {
          makePn(PU::LBRACE),           //
          makeNt(NT::ENUMERATOR_LIST),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ENUM_SPECIFIER);
     };
 
     // enum_specifier → ENUM IDENTIFIER
     rule(makeKw(KW::ENUM),  //
          makeId()) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ENUM_SPECIFIER);
     };
   }
@@ -1107,18 +848,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // enumerator_list → enumerator
-    rule(makeNt(NT::ENUMERATOR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::ENUMERATOR_LIST);
-    };
+    rule(makeNt(NT::ENUMERATOR)) { return makeNt(NT::ENUMERATOR_LIST); };
 
     // enumerator_list → enumerator_list ',' enumerator
     rule(makeNt(NT::ENUMERATOR_LIST),  //
          makePn(PU::COMMA),            //
          makeNt(NT::ENUMERATOR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ENUMERATOR_LIST);
     };
   }
@@ -1128,18 +863,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // enumerator → IDENTIFIER
-    rule(makeId()) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::ENUMERATOR);
-    };
+    rule(makeId()) { return makeNt(NT::ENUMERATOR); };
 
     // enumerator → IDENTIFIER '=' constant_expression
     rule(makeId(),        //
          makePn(PU::EQ),  //
          makeNt(NT::CONSTANT_EXPRESSION)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ENUMERATOR);
     };
   }
@@ -1149,16 +878,10 @@ namespace compiler {
     using NT = NonTerminal;
 
     // type_qualifier → CONST
-    rule(makeKw(KW::CONST)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::TYPE_QUALIFIER);
-    };
+    rule(makeKw(KW::CONST)) { return makeNt(NT::TYPE_QUALIFIER); };
 
     // type_qualifier → VOLATILE
-    rule(makeKw(KW::VOLATILE)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::TYPE_QUALIFIER);
-    };
+    rule(makeKw(KW::VOLATILE)) { return makeNt(NT::TYPE_QUALIFIER); };
   }
 
   void CFGrammar::type_qualifier_list() {
@@ -1166,15 +889,12 @@ namespace compiler {
 
     // type_qualifier_list → type_qualifier
     rule(makeNt(NT::TYPE_QUALIFIER)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::TYPE_QUALIFIER_LIST);
     };
 
     // type_qualifier_list → type_qualifier_list type_qualifier
     rule(makeNt(NT::TYPE_QUALIFIER_LIST),  //
          makeNt(NT::TYPE_QUALIFIER)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::TYPE_QUALIFIER_LIST);
     };
   }
@@ -1185,16 +905,11 @@ namespace compiler {
     // declarator → pointer direct_declarator
     rule(makeNt(NT::POINTER),  //
          makeNt(NT::DIRECT_DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DECLARATOR);
     };
 
     // declarator → direct_declarator
-    rule(makeNt(NT::DIRECT_DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::DECLARATOR);
-    };
+    rule(makeNt(NT::DIRECT_DECLARATOR)) { return makeNt(NT::DECLARATOR); };
   }
 
   void CFGrammar::direct_declarator() {
@@ -1202,18 +917,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // direct_declarator → IDENTIFIER
-    rule(makeId()) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::DIRECT_DECLARATOR);
-    };
+    rule(makeId()) { return makeNt(NT::DIRECT_DECLARATOR); };
 
     // direct_declarator → '(' declarator ')'
     rule(makePn(PU::LBRACE),      //
          makeNt(NT::DECLARATOR),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_DECLARATOR);
     };
 
@@ -1222,10 +931,6 @@ namespace compiler {
          makePn(PU::LBRACKET),             //
          makeNt(NT::CONSTANT_EXPRESSION),  //
          makePn(PU::RBRACKET)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_DECLARATOR);
     };
 
@@ -1233,9 +938,6 @@ namespace compiler {
     rule(makeNt(NT::DIRECT_DECLARATOR),  //
          makePn(PU::LBRACKET),           //
          makePn(PU::RBRACKET)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_DECLARATOR);
     };
 
@@ -1244,10 +946,6 @@ namespace compiler {
          makePn(PU::LBRACE),               //
          makeNt(NT::PARAMETER_TYPE_LIST),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_DECLARATOR);
     };
 
@@ -1256,10 +954,6 @@ namespace compiler {
          makePn(PU::LBRACE),             //
          makeNt(NT::IDENTIFIER_LIST),    //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_DECLARATOR);
     };
 
@@ -1267,9 +961,6 @@ namespace compiler {
     rule(makeNt(NT::DIRECT_DECLARATOR),  //
          makePn(PU::LBRACE),             //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_DECLARATOR);
     };
   }
@@ -1279,24 +970,17 @@ namespace compiler {
     using PU = Punctuator;
 
     // pointer → '*'
-    rule(makePn(PU::STAR)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::POINTER);
-    };
+    rule(makePn(PU::STAR)) { return makeNt(NT::POINTER); };
 
     // pointer → '*' type_qualifier_list
     rule(makePn(PU::STAR),  //
          makeNt(NT::TYPE_QUALIFIER_LIST)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POINTER);
     };
 
     // pointer → '*' pointer
     rule(makePn(PU::STAR),  //
          makeNt(NT::POINTER)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POINTER);
     };
 
@@ -1304,9 +988,6 @@ namespace compiler {
     rule(makePn(PU::STAR),                 //
          makeNt(NT::TYPE_QUALIFIER_LIST),  //
          makeNt(NT::POINTER)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::POINTER);
     };
   }
@@ -1318,7 +999,6 @@ namespace compiler {
 
     // parameter_type_list → parameter_list
     rule(makeNt(NT::PARAMETER_LIST)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::PARAMETER_TYPE_LIST);
     };
 
@@ -1326,9 +1006,6 @@ namespace compiler {
     rule(makeNt(NT::PARAMETER_LIST),  //
          makePn(PU::COMMA),           //
          makePn(PU::ELLIPSIS)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::PARAMETER_TYPE_LIST);
     };
   }
@@ -1339,7 +1016,6 @@ namespace compiler {
 
     // parameter_list → parameter_declaration
     rule(makeNt(NT::PARAMETER_DECLARATION)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::PARAMETER_LIST);
     };
 
@@ -1347,9 +1023,6 @@ namespace compiler {
     rule(makeNt(NT::PARAMETER_LIST),  //
          makePn(PU::COMMA),           //
          makeNt(NT::PARAMETER_DECLARATION)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::PARAMETER_LIST);
     };
   }
@@ -1360,22 +1033,17 @@ namespace compiler {
     // parameter_declaration → declaration_specifiers declarator
     rule(makeNt(NT::DECLARATION_SPECIFIERS),  //
          makeNt(NT::DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::PARAMETER_DECLARATION);
     };
 
     // parameter_declaration → declaration_specifiers abstract_declarator
     rule(makeNt(NT::DECLARATION_SPECIFIERS),  //
          makeNt(NT::ABSTRACT_DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::PARAMETER_DECLARATION);
     };
 
     // parameter_declaration → declaration_specifiers
     rule(makeNt(NT::DECLARATION_SPECIFIERS)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::PARAMETER_DECLARATION);
     };
   }
@@ -1385,18 +1053,12 @@ namespace compiler {
     using PU = Punctuator;
 
     // identifier_list → IDENTIFIER
-    rule(makeId()) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::IDENTIFIER_LIST);
-    };
+    rule(makeId()) { return makeNt(NT::IDENTIFIER_LIST); };
 
     // identifier_list → identifier_list ',' IDENTIFIER
     rule(makeNt(NT::IDENTIFIER_LIST),  //
          makePn(PU::COMMA),            //
          makeId()) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::IDENTIFIER_LIST);
     };
   }
@@ -1406,15 +1068,12 @@ namespace compiler {
 
     // type_name → specifier_qualifier_list
     rule(makeNt(NT::SPECIFIER_QUALIFIER_LIST)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::TYPE_NAME);
     };
 
     // type_name → specifier_qualifier_list abstract_declarator
     rule(makeNt(NT::SPECIFIER_QUALIFIER_LIST),  //
          makeNt(NT::ABSTRACT_DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::TYPE_NAME);
     };
   }
@@ -1423,22 +1082,16 @@ namespace compiler {
     using NT = NonTerminal;
 
     // abstract_declarator → pointer
-    rule(makeNt(NT::POINTER)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::ABSTRACT_DECLARATOR);
-    };
+    rule(makeNt(NT::POINTER)) { return makeNt(NT::ABSTRACT_DECLARATOR); };
 
     // abstract_declarator → direct_abstract_declarator
     rule(makeNt(NT::DIRECT_ABSTRACT_DECLARATOR)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ABSTRACT_DECLARATOR);
     };
 
     // abstract_declarator → pointer direct_abstract_declarator
     rule(makeNt(NT::POINTER),  //
          makeNt(NT::DIRECT_ABSTRACT_DECLARATOR)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ABSTRACT_DECLARATOR);
     };
   }
@@ -1451,17 +1104,12 @@ namespace compiler {
     rule(makePn(PU::LBRACE),               //
          makeNt(NT::ABSTRACT_DECLARATOR),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
 
     // direct_abstract_declarator → '[' ']'
     rule(makePn(PU::LBRACKET),  //
          makePn(PU::RBRACKET)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
 
@@ -1469,9 +1117,6 @@ namespace compiler {
     rule(makePn(PU::LBRACKET),             //
          makeNt(NT::CONSTANT_EXPRESSION),  //
          makePn(PU::RBRACKET)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
 
@@ -1479,9 +1124,6 @@ namespace compiler {
     rule(makeNt(NT::DIRECT_ABSTRACT_DECLARATOR),  //
          makePn(PU::LBRACKET),                    //
          makePn(PU::RBRACKET)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
 
@@ -1491,18 +1133,12 @@ namespace compiler {
          makePn(PU::LBRACKET),                    //
          makeNt(NT::CONSTANT_EXPRESSION),         //
          makePn(PU::RBRACKET)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
 
     // direct_abstract_declarator → '(' ')'
     rule(makePn(PU::LBRACE),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
 
@@ -1510,9 +1146,6 @@ namespace compiler {
     rule(makePn(PU::LBRACE),               //
          makeNt(NT::PARAMETER_TYPE_LIST),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
 
@@ -1520,9 +1153,6 @@ namespace compiler {
     rule(makeNt(NT::DIRECT_ABSTRACT_DECLARATOR),  //
          makePn(PU::LBRACE),                      //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
 
@@ -1532,10 +1162,6 @@ namespace compiler {
          makePn(PU::LBRACE),                      //
          makeNt(NT::PARAMETER_TYPE_LIST),         //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DIRECT_ABSTRACT_DECLARATOR);
     };
   }
@@ -1544,18 +1170,12 @@ namespace compiler {
     using NT = NonTerminal;
 
     // initializer → assignment_expression
-    rule(makeNt(NT::ASSIGNMENT_EXPRESSION)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::INITIALIZER);
-    };
+    rule(makeNt(NT::ASSIGNMENT_EXPRESSION)) { return makeNt(NT::INITIALIZER); };
 
     // initializer → '{' initializer_list '}'
     rule(makePn(Punctuator::LBRACE),    //
          makeNt(NT::INITIALIZER_LIST),  //
          makePn(Punctuator::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::INITIALIZER);
     };
 
@@ -1564,10 +1184,6 @@ namespace compiler {
          makeNt(NT::INITIALIZER_LIST),  //
          makePn(Punctuator::COMMA),     //
          makePn(Punctuator::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::INITIALIZER);
     };
   }
@@ -1576,18 +1192,12 @@ namespace compiler {
     using NT = NonTerminal;
 
     // initializer_list → initializer
-    rule(makeNt(NT::INITIALIZER)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::INITIALIZER_LIST);
-    };
+    rule(makeNt(NT::INITIALIZER)) { return makeNt(NT::INITIALIZER_LIST); };
 
     // initializer_list → initializer_list ',' initializer
     rule(makeNt(NT::INITIALIZER_LIST),  //
          makePn(Punctuator::COMMA),     //
          makeNt(NT::INITIALIZER)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::INITIALIZER_LIST);
     };
   }
@@ -1596,40 +1206,22 @@ namespace compiler {
     using NT = NonTerminal;
 
     // statement → labeled_statement
-    rule(makeNt(NT::LABELED_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STATEMENT);
-    };
+    rule(makeNt(NT::LABELED_STATEMENT)) { return makeNt(NT::STATEMENT); };
 
     // statement → compound_statement
-    rule(makeNt(NT::COMPOUND_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STATEMENT);
-    };
+    rule(makeNt(NT::COMPOUND_STATEMENT)) { return makeNt(NT::STATEMENT); };
 
     // statement → expression_statement
-    rule(makeNt(NT::EXPRESSION_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STATEMENT);
-    };
+    rule(makeNt(NT::EXPRESSION_STATEMENT)) { return makeNt(NT::STATEMENT); };
 
     // statement → selection_statement
-    rule(makeNt(NT::SELECTION_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STATEMENT);
-    };
+    rule(makeNt(NT::SELECTION_STATEMENT)) { return makeNt(NT::STATEMENT); };
 
     // statement → iteration_statement
-    rule(makeNt(NT::ITERATION_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STATEMENT);
-    };
+    rule(makeNt(NT::ITERATION_STATEMENT)) { return makeNt(NT::STATEMENT); };
 
     // statement → jump_statement
-    rule(makeNt(NT::JUMP_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STATEMENT);
-    };
+    rule(makeNt(NT::JUMP_STATEMENT)) { return makeNt(NT::STATEMENT); };
   }
 
   void CFGrammar::labeled_statement() {
@@ -1639,9 +1231,6 @@ namespace compiler {
     rule(makeId(),                   //
          makePn(Punctuator::COLON),  //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::LABELED_STATEMENT);
     };
 
@@ -1650,10 +1239,6 @@ namespace compiler {
          makeNt(NT::CONSTANT_EXPRESSION),  //
          makePn(Punctuator::COLON),        //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::LABELED_STATEMENT);
     };
 
@@ -1661,9 +1246,6 @@ namespace compiler {
     rule(makeKw(Keyword::DEFAULT),   //
          makePn(Punctuator::COLON),  //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::LABELED_STATEMENT);
     };
   }
@@ -1675,8 +1257,6 @@ namespace compiler {
     // compound_statement → '{' '}'
     rule(makePn(PU::LBRACE),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::COMPOUND_STATEMENT);
     };
 
@@ -1684,9 +1264,6 @@ namespace compiler {
     rule(makePn(PU::LBRACE),          //
          makeNt(NT::STATEMENT_LIST),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::COMPOUND_STATEMENT);
     };
 
@@ -1694,9 +1271,6 @@ namespace compiler {
     rule(makePn(PU::LBRACE),            //
          makeNt(NT::DECLARATION_LIST),  //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::COMPOUND_STATEMENT);
     };
 
@@ -1705,10 +1279,6 @@ namespace compiler {
          makeNt(NT::DECLARATION_LIST),  //
          makeNt(NT::STATEMENT_LIST),    //
          makePn(PU::RBRACE)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::COMPOUND_STATEMENT);
     };
   }
@@ -1717,16 +1287,11 @@ namespace compiler {
     using NT = NonTerminal;
 
     // declaration_list → declaration
-    rule(makeNt(NT::DECLARATION)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::DECLARATION_LIST);
-    };
+    rule(makeNt(NT::DECLARATION)) { return makeNt(NT::DECLARATION_LIST); };
 
     // declaration_list → declaration_list declaration
     rule(makeNt(NT::DECLARATION_LIST),  //
          makeNt(NT::DECLARATION)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::DECLARATION_LIST);
     };
   }
@@ -1735,16 +1300,11 @@ namespace compiler {
     using NT = NonTerminal;
 
     // statement_list → statement
-    rule(makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::STATEMENT_LIST);
-    };
+    rule(makeNt(NT::STATEMENT)) { return makeNt(NT::STATEMENT_LIST); };
 
     // statement_list → statement_list statement
     rule(makeNt(NT::STATEMENT_LIST),  //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::STATEMENT_LIST);
     };
   }
@@ -1754,16 +1314,11 @@ namespace compiler {
     using PU = Punctuator;
 
     // expression_statement → ';'
-    rule(makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::EXPRESSION_STATEMENT);
-    };
+    rule(makePn(PU::SEMI_COLON)) { return makeNt(NT::EXPRESSION_STATEMENT); };
 
     // expression_statement → expression ';'
     rule(makeNt(NT::EXPR),  //
          makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::EXPRESSION_STATEMENT);
     };
   }
@@ -1779,11 +1334,6 @@ namespace compiler {
          makeNt(NT::EXPR),    //
          makePn(PU::RPAREN),  //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SELECTION_STATEMENT);
     };
 
@@ -1795,11 +1345,6 @@ namespace compiler {
          makeNt(NT::STATEMENT),  //
          makeKw(KW::ELSE),       //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SELECTION_STATEMENT);
     };
 
@@ -1809,11 +1354,6 @@ namespace compiler {
          makeNt(NT::EXPR),    //
          makePn(PU::RPAREN),  //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::SELECTION_STATEMENT);
     };
   }
@@ -1829,11 +1369,6 @@ namespace compiler {
          makeNt(NT::EXPR),    //
          makePn(PU::RPAREN),  //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ITERATION_STATEMENT);
     };
 
@@ -1845,13 +1380,6 @@ namespace compiler {
          makeNt(NT::EXPR),       //
          makePn(PU::RPAREN),     //
          makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ITERATION_STATEMENT);
     };
 
@@ -1863,12 +1391,6 @@ namespace compiler {
          makeNt(NT::EXPRESSION_STATEMENT),  //
          makePn(PU::RPAREN),                //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ITERATION_STATEMENT);
     };
 
@@ -1881,13 +1403,6 @@ namespace compiler {
          makeNt(NT::EXPR),                  //
          makePn(PU::RPAREN),                //
          makeNt(NT::STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::ITERATION_STATEMENT);
     };
   }
@@ -1901,33 +1416,24 @@ namespace compiler {
     rule(makeKw(KW::GOTO),  //
          makeId(),          //
          makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::JUMP_STATEMENT);
     };
 
     // jump_statement → CONTINUE ';'
     rule(makeKw(KW::CONTINUE),  //
          makePn(Punctuator::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::JUMP_STATEMENT);
     };
 
     // jump_statement → BREAK ';'
     rule(makeKw(KW::BREAK),  //
          makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::JUMP_STATEMENT);
     };
 
     // jump_statement → RETURN ';'
     rule(makeKw(KW::RETURN),  //
          makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::JUMP_STATEMENT);
     };
 
@@ -1935,9 +1441,6 @@ namespace compiler {
     rule(makeKw(KW::RETURN),  //
          makeNt(NT::EXPR),    //
          makePn(PU::SEMI_COLON)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::JUMP_STATEMENT);
     };
   }
@@ -1947,15 +1450,12 @@ namespace compiler {
 
     // translation_unit → external_declaration
     rule(makeNt(NT::EXTERNAL_DECLARATION)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::TRANSLATION_UNIT);
     };
 
     // translation_unit → translation_unit external_declaration
     rule(makeNt(NT::TRANSLATION_UNIT),  //
          makeNt(NT::EXTERNAL_DECLARATION)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::TRANSLATION_UNIT);
     };
   }
@@ -1965,15 +1465,11 @@ namespace compiler {
 
     // external_declaration → function_definition
     rule(makeNt(NT::FUNCTION_DEFINITION)) {
-      parser.reduction_stack.pop_back();
       return makeNt(NT::EXTERNAL_DECLARATION);
     };
 
     // external_declaration → declaration
-    rule(makeNt(NT::DECLARATION)) {
-      parser.reduction_stack.pop_back();
-      return makeNt(NT::EXTERNAL_DECLARATION);
-    };
+    rule(makeNt(NT::DECLARATION)) { return makeNt(NT::EXTERNAL_DECLARATION); };
   }
 
   void CFGrammar::function_definition() {
@@ -1985,10 +1481,6 @@ namespace compiler {
          makeNt(NT::DECLARATOR),              //
          makeNt(NT::DECLARATION_LIST),        //
          makeNt(NT::COMPOUND_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::FUNCTION_DEFINITION);
     };
 
@@ -1997,9 +1489,6 @@ namespace compiler {
     rule(makeNt(NT::DECLARATION_SPECIFIERS),  //
          makeNt(NT::DECLARATOR),              //
          makeNt(NT::COMPOUND_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::FUNCTION_DEFINITION);
     };
 
@@ -2007,17 +1496,12 @@ namespace compiler {
     rule(makeNt(NT::DECLARATOR),        //
          makeNt(NT::DECLARATION_LIST),  //
          makeNt(NT::COMPOUND_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::FUNCTION_DEFINITION);
     };
 
     // function_definition → declarator compound_statement
     rule(makeNt(NT::DECLARATOR),  //
          makeNt(NT::COMPOUND_STATEMENT)) {
-      parser.reduction_stack.pop_back();
-      parser.reduction_stack.pop_back();
       return makeNt(NT::FUNCTION_DEFINITION);
     };
   }

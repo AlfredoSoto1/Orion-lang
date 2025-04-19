@@ -40,11 +40,7 @@ namespace compiler {
   private:
     TokenStream& tokens;
     const CFGrammar& grammar;
-
-    // ASTStack ast_stack;
-    // ASTArena ast_arena;
-
-    std::vector<Symbol> reduction_stack;
+    std::vector<Symbol> parse_stack;
 
   private:
     void shift();

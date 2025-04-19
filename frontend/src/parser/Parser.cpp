@@ -6,7 +6,7 @@
 namespace compiler {
 
   Parser::Parser(TokenStream& tokens, const CFGrammar& grammar) noexcept
-      : tokens(tokens), grammar(grammar), reduction_stack() {}
+      : tokens(tokens), grammar(grammar), parse_stack() {}
 
   void Parser::parse() {
     do {
@@ -23,8 +23,8 @@ namespace compiler {
 
     } while (true);
 
-    if (reduction_stack.size() != 1 ||
-        reduction_stack.back().type != Symbol::Type::NON_TERMINAL) {
+    if (parse_stack.size() != 1 ||
+        parse_stack.back().type != Symbol::Type::NON_TERMINAL) {
       ParserError{ParserErrorType::INCOMPLETE_TREE_REDUCTION, {}};
       std::cout << "Error: Incomplete tree reduction." << std::endl;
       return;
@@ -54,26 +54,24 @@ namespace compiler {
     }
 
     // Push to stack the new symbol
-    reduction_stack.push_back(sym);
+    parse_stack.push_back(sym);
   }
 
   bool Parser::reduce() {
     bool reduced = false;
 
     // Scan for a possible symbol combination starting from the 10th to 1rst
-    for (int len = std::min(10, static_cast<int>(reduction_stack.size()));
-         len >= 1; --len) {
+    for (size_t len = std::min(10ull, parse_stack.size()); len >= 1; --len) {
       // Check if the symbols to be scanned are greater than the maxium amount
       // of symbols reduced.
-      if (len > reduction_stack.size()) {
+      if (len > parse_stack.size()) {
         return false;
       }
 
       // Build the rule from the sequence of symbols
       Rule candidate{};
-      for (int i = 0; i < len; ++i)
-        candidate.symbols[i] =
-            reduction_stack[reduction_stack.size() - len + i];
+      for (size_t i = 0; i < len; ++i)
+        candidate.symbols[i] = parse_stack[parse_stack.size() - len + i];
 
       // Check if the grammar rule exists.
       auto it = grammar.table.find(candidate);
@@ -82,10 +80,13 @@ namespace compiler {
       }
 
       // Apply reduction
-      Symbol sym = it->second(*this);
+      Symbol reduced_symbol = it->second();
+
+      // Remove the symbols that were reduced from the stack
+      for (size_t i = 0; i < len; ++i) parse_stack.pop_back();
 
       // Push the new reduced grammar into stack
-      reduction_stack.push_back(sym);
+      parse_stack.push_back(reduced_symbol);
       reduced = true;
     }
 

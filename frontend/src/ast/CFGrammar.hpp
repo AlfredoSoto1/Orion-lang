@@ -7,8 +7,6 @@
 
 namespace compiler {
 
-  class Parser;
-
   /**
    * @brief Grammar rules for the C/C++-like language.
    *
@@ -29,7 +27,7 @@ namespace compiler {
     bool isAmbiguous() const noexcept { return is_ambiguous; }
 
   public:
-    using ReductionHandler = std::function<Symbol(Parser&)>;
+    using ReductionHandler = std::function<Symbol()>;
     std::unordered_map<Rule, ReductionHandler, RuleHash, RuleEqual> table;
 
   private:

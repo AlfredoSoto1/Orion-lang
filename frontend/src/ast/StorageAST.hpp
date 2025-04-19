@@ -212,7 +212,7 @@ namespace compiler {
 
   enum class NonTerminal : uint8_t {
     UNKNOWN = 0,
-    // Taken from C grammar Microsoft
+    // https://www.lysator.liu.se/c/ANSI-C-grammar-y.html#direct-declarator
     EXPR,
     PRIMARY_EXPR,
     POSTFIX_EXPR,
