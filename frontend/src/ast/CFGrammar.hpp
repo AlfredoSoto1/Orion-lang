@@ -28,10 +28,23 @@ namespace compiler {
 
   public:
     using ReductionHandler = std::function<Symbol()>;
-    std::unordered_map<Rule, ReductionHandler, RuleHash, RuleEqual> table;
+    std::unordered_multimap<Rule, ReductionHandler, RuleHash, RuleEqual> table;
 
   private:
     bool is_ambiguous;
+
+  private:
+    struct Proxy {
+      Rule&& key;
+      CFGrammar& parent;
+      Proxy(CFGrammar& p, Rule&& k) : parent(p), key(std::move(k)) {}
+
+      void operator=(ReductionHandler&& handler) {
+        parent.table.insert({std::move(key), std::move(handler)});
+      }
+    };
+
+    Proxy emplaceRule(Rule&& rule);
 
   private:
     Symbol makeId() const noexcept;

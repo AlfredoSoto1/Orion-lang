@@ -73,6 +73,14 @@ namespace compiler {
       for (size_t i = 0; i < len; ++i)
         candidate.symbols[i] = parse_stack[parse_stack.size() - len + i];
 
+      auto range = grammar.table.equal_range(candidate);
+      for (auto it = range.first; it != range.second; ++it) {
+        // it->first is the key (same for all in the range)
+        // it->second is the value
+
+        // test which reduction to apply based on the context.
+      }
+
       // Check if the grammar rule exists.
       auto it = grammar.table.find(candidate);
       if (it == grammar.table.end()) {

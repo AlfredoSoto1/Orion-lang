@@ -4,16 +4,6 @@
 
 #include "parser/Parser.hpp"
 
-#define rule(...) table[makeRule({__VA_ARGS__})] = [this]() -> Symbol
-
-// #define rule(...)                                                 \
-//   if (!table.contains(makeRule({__VA_ARGS__})) || is_ambiguous) { \
-//     std::cerr << "Grammar is ambigous" << std::endl;              \
-//     is_ambiguous = true;                                          \
-//     return;                                                       \
-//   }                                                               \
-//   table[makeRule({__VA_ARGS__})] = [this](Parser & parser)
-
 namespace compiler {
 
   CFGrammar::CFGrammar() noexcept : is_ambiguous(false) {
@@ -82,6 +72,14 @@ namespace compiler {
     external_declaration();
     function_definition();
   }
+
+  CFGrammar::Proxy CFGrammar::emplaceRule(Rule&& rule) {
+    // Return a Proxy object that will be used to build the rule
+    // with the given rule.
+    return Proxy(*this, std::move(rule));
+  }
+
+#define rule(...) emplaceRule(makeRule({__VA_ARGS__})) = [this]() -> Symbol
 
   // Helper to make a Symbol from components
   Symbol CFGrammar::makeId() const noexcept {
