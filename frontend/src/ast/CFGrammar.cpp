@@ -6,7 +6,10 @@
 
 namespace compiler {
 
-  CFGrammar::CFGrammar() noexcept : is_ambiguous(false) {
+#define rule(...) \
+  emplRule(makeRule({__VA_ARGS__})) = [this](Parser & parser) -> Symbol
+
+  CFGrammar::CFGrammar() noexcept {
     // Build rule table following grammar from Storage AST
     postfix_expr();
     primary_expr();
@@ -73,13 +76,7 @@ namespace compiler {
     function_definition();
   }
 
-  CFGrammar::Proxy CFGrammar::emplaceRule(Rule&& rule) {
-    // Return a Proxy object that will be used to build the rule
-    // with the given rule.
-    return Proxy(*this, std::move(rule));
-  }
-
-#define rule(...) emplaceRule(makeRule({__VA_ARGS__})) = [this]() -> Symbol
+  CFGrammar::~CFGrammar() noexcept { table.clear(); }
 
   // Helper to make a Symbol from components
   Symbol CFGrammar::makeId() const noexcept {
@@ -129,10 +126,6 @@ namespace compiler {
   }
 
   void CFGrammar::primary_expr() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-    using PU = Punctuator;
-
     // primary-expr → ( expr )
     rule(makePn(PU::LPAREN),  //
          makeNt(NT::EXPR),    //
@@ -148,10 +141,6 @@ namespace compiler {
   }
 
   void CFGrammar::postfix_expr() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-    using PU = Punctuator;
-
     // postfix-expr → primary-expr
     rule(makeNt(NT::PRIMARY_EXPR)) { return makeNt(NT::POSTFIX_EXPR); };
 
@@ -208,9 +197,6 @@ namespace compiler {
   }
 
   void CFGrammar::arg_expr_list() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // arg_expr_list → assignment_expr
     rule(makeNt(NT::ASSIGNMENT_EXPR)) { return makeNt(NT::ARG_EXPR_LIST); };
 
@@ -223,10 +209,6 @@ namespace compiler {
   }
 
   void CFGrammar::unary_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-    using KW = Keyword;
-
     // unary_expr → postfix_expr
     rule(makeNt(NT::POSTFIX_EXPR)) { return makeNt(NT::UNARY_EXPR); };
 
@@ -260,9 +242,6 @@ namespace compiler {
   }
 
   void CFGrammar::unary_op() {
-    using PU = Punctuator;
-    using NT = NonTerminal;
-
     // unary_op → & | * | + | - | ~ | !
     for (auto op :
          {PU::BAND, PU::STAR, PU::PLUS, PU::DASH, PU::BNOT, PU::NOT}) {
@@ -271,9 +250,6 @@ namespace compiler {
   }
 
   void CFGrammar::cast_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // cast_expr → unary_expr
     rule(makeNt(NT::UNARY_EXPR)) { return makeNt(NT::CAST_EXPR); };
 
@@ -287,9 +263,6 @@ namespace compiler {
   }
 
   void CFGrammar::multiplicative_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // multiplicative_expr → cast_expr
     rule(makeNt(NT::CAST_EXPR)) { return makeNt(NT::MULTIPLICATIVE_EXPR); };
 
@@ -316,9 +289,6 @@ namespace compiler {
   }
 
   void CFGrammar::additive_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // additive_expr → multiplicative_expr
     rule(makeNt(NT::MULTIPLICATIVE_EXPR)) { return makeNt(NT::ADDITIVE_EXPR); };
 
@@ -338,9 +308,6 @@ namespace compiler {
   }
 
   void CFGrammar::shift_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // shift_expr → additive_expr
     rule(makeNt(NT::ADDITIVE_EXPR)) { return makeNt(NT::SHIFT_EXPR); };
 
@@ -360,9 +327,6 @@ namespace compiler {
   }
 
   void CFGrammar::relational_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // relational_expr → shift_expr
     rule(makeNt(NT::SHIFT_EXPR)) { return makeNt(NT::RELATIONAL_EXPR); };
 
@@ -396,9 +360,6 @@ namespace compiler {
   }
 
   void CFGrammar::equality_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // equality_expr → relational_expr
     rule(makeNt(NT::RELATIONAL_EXPR)) { return makeNt(NT::EQUALITY_EXPR); };
 
@@ -418,9 +379,6 @@ namespace compiler {
   }
 
   void CFGrammar::and_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // and_expr → equality_expr
     rule(makeNt(NT::EQUALITY_EXPR)) { return makeNt(NT::AND_EXPR); };
 
@@ -433,9 +391,6 @@ namespace compiler {
   }
 
   void CFGrammar::exclusive_or_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // exclusive_or_expr → and_expr
     rule(makeNt(NT::AND_EXPR)) { return makeNt(NT::EXCLUSIVE_OR_EXPR); };
 
@@ -448,9 +403,6 @@ namespace compiler {
   }
 
   void CFGrammar::inclusive_or_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // inclusive_or_expr → exclusive_or_expr
     rule(makeNt(NT::EXCLUSIVE_OR_EXPR)) {
       return makeNt(NT::INCLUSIVE_OR_EXPR);
@@ -465,9 +417,6 @@ namespace compiler {
   }
 
   void CFGrammar::logical_and_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // logical_and_expr → inclusive_or_expr
     rule(makeNt(NT::INCLUSIVE_OR_EXPR)) {
       return makeNt(NT::LOGICAL_AND_EXPR);
@@ -482,9 +431,6 @@ namespace compiler {
   }
 
   void CFGrammar::logical_or_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // logical_or_expr → logical_and_expr
     rule(makeNt(NT::LOGICAL_AND_EXPR)) { return makeNt(NT::LOGICAL_OR_EXPR); };
 
@@ -497,9 +443,6 @@ namespace compiler {
   }
 
   void CFGrammar::conditional_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // conditional_expr → logical_or_expr
     rule(makeNt(NT::LOGICAL_OR_EXPR)) { return makeNt(NT::CONDITIONAL_EXPR); };
 
@@ -514,9 +457,6 @@ namespace compiler {
   }
 
   void CFGrammar::assignment_expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // assignment_expr → conditional_expr
     rule(makeNt(NT::CONDITIONAL_EXPR)) { return makeNt(NT::ASSIGNMENT_EXPR); };
 
@@ -529,9 +469,6 @@ namespace compiler {
   }
 
   void CFGrammar::assignment_op() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     for (auto op : {PU::EQ, PU::STAR_EQ, PU::SLASH_EQ, PU::MOD_EQ, PU::PLUS_EQ,
                     PU::DASH_EQ, PU::LSHIFT_EQ, PU::RSHIFT_EQ, PU::AND_EQ,
                     PU::OR_EQ, PU::XOR_EQ}) {
@@ -540,9 +477,6 @@ namespace compiler {
   }
 
   void CFGrammar::expr() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // expr → assignment_expr
     rule(makeNt(NT::ASSIGNMENT_EXPR)) { return makeNt(NT::EXPR); };
 
@@ -555,16 +489,11 @@ namespace compiler {
   }
 
   void CFGrammar::constant_expr() {
-    using NT = NonTerminal;
-
     // constant_expr → conditional_expr
     rule(makeNt(NT::CONDITIONAL_EXPR)) { return makeNt(NT::CONSTANT_EXPR); };
   }
 
   void CFGrammar::decl() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // decl → decl_specifiers ;
     rule(makeNt(NT::DECLARATION_SPECIFIERS), makePn(PU::SEMI_COLON)) {
       return makeNt(NT::DECLARATION);
@@ -579,8 +508,6 @@ namespace compiler {
   }
 
   void CFGrammar::decl_specifiers() {
-    using NT = NonTerminal;
-
     // decl_specifiers → storage_class_specifier
     rule(makeNt(NT::STORAGE_CLASS_SPECIFIER)) {
       return makeNt(NT::DECL_SPECIFIERS);
@@ -611,9 +538,6 @@ namespace compiler {
   }
 
   void CFGrammar::init_decl_list() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // init_decl_list → init_declarator
     rule(makeNt(NT::INIT_DECL)) { return makeNt(NT::INIT_DECL_LIST); };
 
@@ -626,9 +550,6 @@ namespace compiler {
   }
 
   void CFGrammar::init_decl() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // init_decl → declarator
     rule(makeNt(NT::DECLARATOR)) { return makeNt(NT::INIT_DECL); };
 
@@ -641,9 +562,6 @@ namespace compiler {
   }
 
   void CFGrammar::storage_class_spec() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-
     // storage_class_specifier → typedef | extern | static | auto
     for (auto kw : {KW::TYPEDEF, KW::EXTERN, KW::STATIC, KW::AUTO}) {
       rule(makeKw(kw)) { return makeNt(NT::STORAGE_CLASS_SPECIFIER); };
@@ -651,10 +569,6 @@ namespace compiler {
   }
 
   void CFGrammar::type_specifier() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-    using PU = Punctuator;
-
     // type_specifier → VOID | CHAR | SHORT | INT | LONG | FLOAT | DOUBLE |
     // SIGNED | UNSIGNED
     for (auto kw : {KW::VOID, KW::CHAR, KW::SHORT, KW::INT, KW::LONG, KW::FLOAT,
@@ -675,10 +589,6 @@ namespace compiler {
   }
 
   void CFGrammar::struct_or_union_specifier() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-    using PU = Punctuator;
-
     // struct_or_union_specifier → struct_or_union IDENTIFIER '{'
     // struct_declaration_list '}'
     rule(makeNt(NT::STRUCT_OR_UNION),          //
@@ -706,10 +616,6 @@ namespace compiler {
   }
 
   void CFGrammar::struct_or_union() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-    using PU = Punctuator;
-
     // struct_or_union → STRUCT
     rule(makeKw(KW::STRUCT)) { return makeNt(NT::STRUCT_OR_UNION); };
 
@@ -718,8 +624,6 @@ namespace compiler {
   }
 
   void CFGrammar::struct_declaration_list() {
-    using NT = NonTerminal;
-
     // struct_declaration_list → struct_declaration
     rule(makeNt(NT::STRUCT_DECLARATION)) {
       return makeNt(NT::STRUCT_DECLARATION_LIST);
@@ -733,9 +637,6 @@ namespace compiler {
   }
 
   void CFGrammar::struct_declaration() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // struct_declaration → specifier_qualifier_list struct_declarator_list
     // ';'
     rule(makeNt(NT::SPECIFIER_QUALIFIER_LIST),  //
@@ -746,10 +647,6 @@ namespace compiler {
   }
 
   void CFGrammar::specifier_qualifier_list() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-    using PU = Punctuator;
-
     // specifier_qualifier_list → type_specifier specifier_qualifier_list
     rule(makeNt(NT::TYPE_SPECIFIER),  //
          makeNt(NT::SPECIFIER_QUALIFIER_LIST)) {
@@ -774,9 +671,6 @@ namespace compiler {
   }
 
   void CFGrammar::struct_declarator_list() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // struct_declarator_list → struct_declarator
     rule(makeNt(NT::STRUCT_DECLARATOR)) {
       return makeNt(NT::STRUCT_DECLARATOR_LIST);
@@ -791,9 +685,6 @@ namespace compiler {
   }
 
   void CFGrammar::struct_declarator() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // struct_declarator → declarator
     rule(makeNt(NT::DECLARATOR)) { return makeNt(NT::STRUCT_DECLARATOR); };
 
@@ -812,10 +703,6 @@ namespace compiler {
   }
 
   void CFGrammar::enum_specifier() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-    using PU = Punctuator;
-
     // enum_specifier → ENUM '{' enumerator_list '}'
     rule(makeKw(KW::ENUM),             //
          makePn(PU::LBRACE),           //
@@ -841,10 +728,6 @@ namespace compiler {
   }
 
   void CFGrammar::enumerator_list() {
-    using NT = NonTerminal;
-    using KW = Keyword;
-    using PU = Punctuator;
-
     // enumerator_list → enumerator
     rule(makeNt(NT::ENUMERATOR)) { return makeNt(NT::ENUMERATOR_LIST); };
 
@@ -857,9 +740,6 @@ namespace compiler {
   }
 
   void CFGrammar::enumerator() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // enumerator → IDENTIFIER
     rule(makeId()) { return makeNt(NT::ENUMERATOR); };
 
@@ -872,9 +752,6 @@ namespace compiler {
   }
 
   void CFGrammar::type_qualifier() {
-    using KW = Keyword;
-    using NT = NonTerminal;
-
     // type_qualifier → CONST
     rule(makeKw(KW::CONST)) { return makeNt(NT::TYPE_QUALIFIER); };
 
@@ -883,8 +760,6 @@ namespace compiler {
   }
 
   void CFGrammar::type_qualifier_list() {
-    using NT = NonTerminal;
-
     // type_qualifier_list → type_qualifier
     rule(makeNt(NT::TYPE_QUALIFIER)) {
       return makeNt(NT::TYPE_QUALIFIER_LIST);
@@ -898,8 +773,6 @@ namespace compiler {
   }
 
   void CFGrammar::declarator() {
-    using NT = NonTerminal;
-
     // declarator → pointer direct_declarator
     rule(makeNt(NT::POINTER),  //
          makeNt(NT::DIRECT_DECLARATOR)) {
@@ -911,9 +784,6 @@ namespace compiler {
   }
 
   void CFGrammar::direct_declarator() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // direct_declarator → IDENTIFIER
     rule(makeId()) { return makeNt(NT::DIRECT_DECLARATOR); };
 
@@ -964,9 +834,6 @@ namespace compiler {
   }
 
   void CFGrammar::pointer() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // pointer → '*'
     rule(makePn(PU::STAR)) { return makeNt(NT::POINTER); };
 
@@ -991,10 +858,6 @@ namespace compiler {
   }
 
   void CFGrammar::parameter_type_list() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-    using KW = Keyword;
-
     // parameter_type_list → parameter_list
     rule(makeNt(NT::PARAMETER_LIST)) {
       return makeNt(NT::PARAMETER_TYPE_LIST);
@@ -1009,9 +872,6 @@ namespace compiler {
   }
 
   void CFGrammar::parameter_list() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // parameter_list → parameter_declaration
     rule(makeNt(NT::PARAMETER_DECLARATION)) {
       return makeNt(NT::PARAMETER_LIST);
@@ -1026,8 +886,6 @@ namespace compiler {
   }
 
   void CFGrammar::parameter_declaration() {
-    using NT = NonTerminal;
-
     // parameter_declaration → declaration_specifiers declarator
     rule(makeNt(NT::DECLARATION_SPECIFIERS),  //
          makeNt(NT::DECLARATOR)) {
@@ -1047,9 +905,6 @@ namespace compiler {
   }
 
   void CFGrammar::identifier_list() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // identifier_list → IDENTIFIER
     rule(makeId()) { return makeNt(NT::IDENTIFIER_LIST); };
 
@@ -1062,8 +917,6 @@ namespace compiler {
   }
 
   void CFGrammar::type_name() {
-    using NT = NonTerminal;
-
     // type_name → specifier_qualifier_list
     rule(makeNt(NT::SPECIFIER_QUALIFIER_LIST)) {
       return makeNt(NT::TYPE_NAME);
@@ -1077,8 +930,6 @@ namespace compiler {
   }
 
   void CFGrammar::abstract_declarator() {
-    using NT = NonTerminal;
-
     // abstract_declarator → pointer
     rule(makeNt(NT::POINTER)) { return makeNt(NT::ABSTRACT_DECLARATOR); };
 
@@ -1095,9 +946,6 @@ namespace compiler {
   }
 
   void CFGrammar::direct_abstract_declarator() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // direct_abstract_declarator → '(' abstract_declarator ')'
     rule(makePn(PU::LBRACE),               //
          makeNt(NT::ABSTRACT_DECLARATOR),  //
@@ -1165,8 +1013,6 @@ namespace compiler {
   }
 
   void CFGrammar::initializer() {
-    using NT = NonTerminal;
-
     // initializer → assignment_expression
     rule(makeNt(NT::ASSIGNMENT_EXPRESSION)) { return makeNt(NT::INITIALIZER); };
 
@@ -1187,8 +1033,6 @@ namespace compiler {
   }
 
   void CFGrammar::initializer_list() {
-    using NT = NonTerminal;
-
     // initializer_list → initializer
     rule(makeNt(NT::INITIALIZER)) { return makeNt(NT::INITIALIZER_LIST); };
 
@@ -1201,8 +1045,6 @@ namespace compiler {
   }
 
   void CFGrammar::statement() {
-    using NT = NonTerminal;
-
     // statement → labeled_statement
     rule(makeNt(NT::LABELED_STATEMENT)) { return makeNt(NT::STATEMENT); };
 
@@ -1223,8 +1065,6 @@ namespace compiler {
   }
 
   void CFGrammar::labeled_statement() {
-    using NT = NonTerminal;
-
     // labeled_statement → IDENTIFIER ':' statement
     rule(makeId(),                   //
          makePn(Punctuator::COLON),  //
@@ -1249,9 +1089,6 @@ namespace compiler {
   }
 
   void CFGrammar::compound_statement() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // compound_statement → '{' '}'
     rule(makePn(PU::LBRACE),  //
          makePn(PU::RBRACE)) {
@@ -1282,8 +1119,6 @@ namespace compiler {
   }
 
   void CFGrammar::declaration_list() {
-    using NT = NonTerminal;
-
     // declaration_list → declaration
     rule(makeNt(NT::DECLARATION)) { return makeNt(NT::DECLARATION_LIST); };
 
@@ -1295,8 +1130,6 @@ namespace compiler {
   }
 
   void CFGrammar::statement_list() {
-    using NT = NonTerminal;
-
     // statement_list → statement
     rule(makeNt(NT::STATEMENT)) { return makeNt(NT::STATEMENT_LIST); };
 
@@ -1308,9 +1141,6 @@ namespace compiler {
   }
 
   void CFGrammar::expression_statement() {
-    using NT = NonTerminal;
-    using PU = Punctuator;
-
     // expression_statement → ';'
     rule(makePn(PU::SEMI_COLON)) { return makeNt(NT::EXPRESSION_STATEMENT); };
 
@@ -1322,10 +1152,6 @@ namespace compiler {
   }
 
   void CFGrammar::selection_statement() {
-    using KW = Keyword;
-    using PU = Punctuator;
-    using NT = NonTerminal;
-
     // selection_statement → IF '(' expression ')' statement
     rule(makeKw(KW::IF),      //
          makePn(PU::LPAREN),  //
@@ -1357,10 +1183,6 @@ namespace compiler {
   }
 
   void CFGrammar::iteration_statement() {
-    using KW = Keyword;
-    using PU = Punctuator;
-    using NT = NonTerminal;
-
     // iteration_statement → WHILE '(' expression ')' statement
     rule(makeKw(KW::WHILE),   //
          makePn(PU::LPAREN),  //
@@ -1406,10 +1228,6 @@ namespace compiler {
   }
 
   void CFGrammar::jump_statement() {
-    using KW = Keyword;
-    using PU = Punctuator;
-    using NT = NonTerminal;
-
     // jump_statement → GOTO IDENTIFIER ';'
     rule(makeKw(KW::GOTO),  //
          makeId(),          //
@@ -1444,8 +1262,6 @@ namespace compiler {
   }
 
   void CFGrammar::translation_unit() {
-    using NT = NonTerminal;
-
     // translation_unit → external_declaration
     rule(makeNt(NT::EXTERNAL_DECLARATION)) {
       return makeNt(NT::TRANSLATION_UNIT);
@@ -1459,8 +1275,6 @@ namespace compiler {
   }
 
   void CFGrammar::external_declaration() {
-    using NT = NonTerminal;
-
     // external_declaration → function_definition
     rule(makeNt(NT::FUNCTION_DEFINITION)) {
       return makeNt(NT::EXTERNAL_DECLARATION);
@@ -1471,8 +1285,6 @@ namespace compiler {
   }
 
   void CFGrammar::function_definition() {
-    using NT = NonTerminal;
-
     // function_definition → declaration_specifiers declarator
     // declaration_list compound_statement
     rule(makeNt(NT::DECLARATION_SPECIFIERS),  //

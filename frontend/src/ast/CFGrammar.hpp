@@ -7,6 +7,8 @@
 
 namespace compiler {
 
+  class Parser;
+
   /**
    * @brief Grammar rules for the C/C++-like language.
    *
@@ -16,22 +18,14 @@ namespace compiler {
   class CFGrammar final {
   public:
     CFGrammar() noexcept;
-    ~CFGrammar() = default;
-
-    /**
-     * @brief Check if the grammar is ambiguous.
-     *
-     * @return true
-     * @return false
-     */
-    bool isAmbiguous() const noexcept { return is_ambiguous; }
+    ~CFGrammar() noexcept;
 
   public:
-    using ReductionHandler = std::function<Symbol()>;
+    using KW = Keyword;
+    using PU = Punctuator;
+    using NT = NonTerminal;
+    using ReductionHandler = std::function<Symbol(Parser&)>;
     std::unordered_multimap<Rule, ReductionHandler, RuleHash, RuleEqual> table;
-
-  private:
-    bool is_ambiguous;
 
   private:
     struct Proxy {
@@ -44,14 +38,14 @@ namespace compiler {
       }
     };
 
-    Proxy emplaceRule(Rule&& rule);
+    Proxy emplRule(Rule&& rule);
 
   private:
     Symbol makeId() const noexcept;
     Symbol makeLt() const noexcept;
-    Symbol makeKw(Keyword k) const noexcept;
-    Symbol makePn(Punctuator p) const noexcept;
-    Symbol makeNt(NonTerminal nt) const noexcept;
+    Symbol makeKw(KW kw) const noexcept;
+    Symbol makePn(PU pu) const noexcept;
+    Symbol makeNt(NT nt) const noexcept;
 
     Rule makeRule(std::initializer_list<Symbol> syms) const noexcept;
 

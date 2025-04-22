@@ -285,6 +285,7 @@ namespace compiler {
   struct Symbol {
     enum class Type : uint8_t {
       UNKNOWN = 0,
+      DEPENDS_ON_CONTEXT,
       NON_TERMINAL,
       KEYWORD,
       IDENTIFIER,

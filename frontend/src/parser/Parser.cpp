@@ -73,29 +73,25 @@ namespace compiler {
       for (size_t i = 0; i < len; ++i)
         candidate.symbols[i] = parse_stack[parse_stack.size() - len + i];
 
+      // Check if the rule exists in the grammar table
       auto range = grammar.table.equal_range(candidate);
       for (auto it = range.first; it != range.second; ++it) {
-        // it->first is the key (same for all in the range)
-        // it->second is the value
+        // Apply reduction
+        Symbol reduced_symbol = it->second(*this);
 
-        // test which reduction to apply based on the context.
+        // Check if the reduced symbol is depends on a higher context
+        if (reduced_symbol.type == Symbol::Type::DEPENDS_ON_CONTEXT) {
+          continue;
+        }
+
+        // Remove the symbols that were reduced from the stack
+        for (size_t i = 0; i < len; ++i) parse_stack.pop_back();
+
+        // Push the new reduced grammar into stack
+        parse_stack.push_back(reduced_symbol);
+        reduced = true;
+        break;
       }
-
-      // Check if the grammar rule exists.
-      auto it = grammar.table.find(candidate);
-      if (it == grammar.table.end()) {
-        continue;
-      }
-
-      // Apply reduction
-      Symbol reduced_symbol = it->second();
-
-      // Remove the symbols that were reduced from the stack
-      for (size_t i = 0; i < len; ++i) parse_stack.pop_back();
-
-      // Push the new reduced grammar into stack
-      parse_stack.push_back(reduced_symbol);
-      reduced = true;
     }
 
     return reduced;

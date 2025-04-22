@@ -344,13 +344,6 @@ void testParser(const std::string& input, const std::string& testName) {
   // and should contain the rules for parsing the input.
   CFGrammar grammar = CFGrammar();
 
-  // Check if the grammar is ambigous before parsing
-  // This is a placeholder check. The actual implementation should
-  // check the grammar rules for ambiguity.
-  if (grammar.isAmbiguous()) {
-    return;
-  }
-
   // Create a parser instance
   Parser parser = Parser(stream, grammar);
   parser.parse();
