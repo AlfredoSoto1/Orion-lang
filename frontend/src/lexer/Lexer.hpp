@@ -26,9 +26,16 @@ namespace compiler {
 
     /**
      * @brief Advances to the next token in the source code.
-     * @return LexerResult The next token or a lexer error.
+     * @return LexerResult contining the next token or a lexer error.
      */
     LexerResult advance();
+
+    /**
+     * @brief Prints token for debugging.
+     *
+     * @param token
+     */
+    void debugPrintToken(const Token& token) noexcept;
 
   private:
     uint32_t pos;
@@ -54,10 +61,13 @@ namespace compiler {
     void skipBlockComments() noexcept;
 
   private:
+    bool isBasicPunc(char c) const noexcept;
     bool isWhitespace(char c) const noexcept;
-    bool isPunctuator(char c) const noexcept;
     bool isEscapedChar(char c) const noexcept;
     bool isValidBaseNumber(char c, uint8_t base) const noexcept;
+
+    TokenType typeSufixFrom() noexcept;
+    uint8_t basePrefixFrom(uint32_t& lex_start) noexcept;
 
     char toEscapedChar(char c) const noexcept;
     IParseResult toInt(std::string_view integer_literal, uint8_t base) const;
@@ -67,7 +77,7 @@ namespace compiler {
     // Move the current position forward if the current character
     // meets the condition and it hasn't reached the end of file.
     template <typename Condition>
-    uint64_t peekWhile(Condition&& condition) noexcept {
+    uint32_t nextWhile(Condition&& condition) noexcept {
       while (condition(peek()) && peek() != '\0') {
         if (peek() == '\n') line++;
         pos++;

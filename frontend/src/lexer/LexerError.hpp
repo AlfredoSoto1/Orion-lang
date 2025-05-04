@@ -31,6 +31,7 @@ namespace compiler {
     INVALID_FLOAT_LITERAL,    // Float format is incorrect
     INVALID_NUMBER_LITERAL,   // Number format is incorrect
     UNEXPECTED_RADIX_PREFIX,  // Misuse of radix prefix (e.g., "0xG1" in hex)
+    UNEXPECTED_RADIX_SUFIX,   // Misuse of radix sufix (e.g., "10a" in decimal)
     OVERFLOW_NUMBER_LITERAL,  // Numeric literal exceeds storage capacity
 
     // Comment errors

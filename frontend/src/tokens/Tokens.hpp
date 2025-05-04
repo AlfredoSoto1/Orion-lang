@@ -8,21 +8,22 @@
 
 namespace compiler {
 
-  struct string_view {
-    uint32_t start;
-    uint32_t end;
-  };
-
   /**
    * @brief Represents an identifier in the source code.
+   *        The max amount of characters that the identifier can be is 2^16.
    *
    */
   struct Identifier {
-    std::string_view name;
+    uint16_t start;
+    uint16_t end;
+
+    std::string_view view(std::string_view source) const {
+      return source.substr(start, end - start);
+    }
   };
 
   /**
-   * @brief
+   * @brief Represents the end of file after tokenizing.
    *
    */
   struct EndOfFile {
@@ -31,15 +32,30 @@ namespace compiler {
   };
 
   /**
-   * @brief
+   * @brief Holds a reference to the start and end of a string literal in the
+   *        code-text. The maximum amount of characters that a string literal
+   *        can hold is 2^32.
+   *
+   */
+  struct string_lit {
+    uint32_t start;
+    uint32_t end;
+
+    std::string_view view(std::string_view source) const {
+      return source.substr(start, end - start);
+    }
+  };
+
+  /**
+   * @brief Holds the data of the literal.
    *
    */
   union Literal {
-    uint64_t integer;         // Unsigned 64-bit integer
-    double floating;          // Double precision floating point
-    char character;           // Single Byte character
-    bool boolean;             // Boolean
-    std::string_view string;  // String
+    bool boolean;       // Boolean
+    char character;     // Single Byte character
+    double floating;    // Double precision floating point
+    uint64_t integer;   // Unsigned 64-bit integer
+    string_lit string;  // String literal
   };
 
   /**
@@ -52,10 +68,19 @@ namespace compiler {
     IDENTIFIER,
     PUNCTUATOR,
     CHAR_LITERAL,
-    STRING_LITERAL,
-    BOOLEAN_LITERAL,
-    INTEGER_LITERAL,
-    FLOATING_LITERAL,
+    BOOL_LITERAL,
+    STR8_LITERAL,
+    STR16_LITERAL,
+    INT8_LITERAL,
+    INT16_LITERAL,
+    INT32_LITERAL,
+    INT64_LITERAL,
+    UINT8_LITERAL,
+    UINT16_LITERAL,
+    UINT32_LITERAL,
+    UINT64_LITERAL,
+    FLOAT32_LITERAL,
+    FLOAT64_LITERAL,
     COMMENT,
     ENDOF,
   };
@@ -77,7 +102,8 @@ namespace compiler {
   };
 
   /**
-   * @brief Represents a token in the source code.
+   * @brief Representation of a token. This holds the value and the type of what
+   *        it is.
    *
    */
   struct Token {

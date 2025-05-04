@@ -3,6 +3,7 @@
 #include <cctype>
 #include <charconv>
 #include <cmath>
+#include <iostream>
 
 /**
  * @brief Expands into an unexpected lexer error
@@ -13,6 +14,75 @@
 namespace compiler {
 
   Lexer::Lexer(std::string_view src) noexcept : pos(0), line(0), source(src) {}
+
+  void Lexer::debugPrintToken(const Token& token) noexcept {
+    switch (token.type) {
+      case TokenType::KEYWORD:
+        std::cout << "Token: [Keyword: "
+                  << KeywordHandler::to_string(token.value.keyword) << "]"
+                  << std::endl;
+        break;
+
+      case TokenType::IDENTIFIER:
+        std::cout << "Token: [Identifier: "
+                  << token.value.identifier.view(source) << "]" << std::endl;
+        break;
+
+      case TokenType::CHAR_LITERAL:
+        std::cout << "Token: [Char Lit: " << token.value.literal.character
+                  << "]" << std::endl;
+        break;
+
+      case TokenType::STR8_LITERAL:
+      case TokenType::STR16_LITERAL:
+        std::cout << "Token: [String: "
+                  << token.value.literal.string.view(source) << "]"
+                  << std::endl;
+        break;
+
+      case TokenType::BOOL_LITERAL:
+        std::cout << "Token: [Bool: " << token.value.literal.boolean << "]"
+                  << std::endl;
+        break;
+
+      case TokenType::INT8_LITERAL:
+      case TokenType::INT16_LITERAL:
+      case TokenType::INT32_LITERAL:
+      case TokenType::INT64_LITERAL:
+        std::cout << "Token: [Integer: " << token.value.literal.integer << "]"
+                  << std::endl;
+        break;
+      case TokenType::UINT8_LITERAL:
+      case TokenType::UINT16_LITERAL:
+      case TokenType::UINT32_LITERAL:
+      case TokenType::UINT64_LITERAL:
+        std::cout << "Token: [Unsigned Integer: " << token.value.literal.integer
+                  << "]" << std::endl;
+        break;
+
+      case TokenType::FLOAT32_LITERAL:
+      case TokenType::FLOAT64_LITERAL:
+        std::cout << "Token: [Float: " << token.value.literal.floating << "]"
+                  << std::endl;
+        break;
+
+      case TokenType::PUNCTUATOR:
+        std::cout << "Token: [Punctuator: "
+                  << PunctuatorHandler::to_string(token.value.punctuator) << "]"
+                  << std::endl;
+        break;
+
+      case TokenType::COMMENT:
+        std::cout << "Token: [Comment]" << std::endl;
+        break;
+
+      case TokenType::ENDOF:
+        std::cout << "Token: [EOF]" << std::endl;
+        break;
+      default:
+        std::cerr << "Unknown token type.\n";
+    }
+  }
 
   Lexer::LexerResult Lexer::advance() {
     // Skip all whitespace characters until we reach a non-whitespace
@@ -37,7 +107,7 @@ namespace compiler {
       return makeStringLiteral();
     } else if (c == '\'') {
       return makeCharLiteral();
-    } else if (isPunctuator(c)) {
+    } else if (isBasicPunc(c)) {
       return makePunctuator();
     } else {
       return lexerError(LexerErrorType::UNKNOWN_TOKEN);
@@ -45,18 +115,15 @@ namespace compiler {
   }
 
   Lexer::LexerResult Lexer::makeSymbol() {
-    uint64_t lexeme_start = pos;
-    uint64_t lexeme_end =
-        peekWhile([](char c) { return isalnum(c) || c == '_'; });
+    uint32_t lex_start = pos;
+    uint32_t lex_end = nextWhile([](char c) { return isalnum(c) || c == '_'; });
 
-    if (lexeme_end - lexeme_start > 256) {
-      // Handle lexer error when identifier exceeds length
-      // Throw lexer error or return an unknown token
+    // Handle lexer error when identifier exceeds length
+    if (lex_end - lex_start > std::numeric_limits<uint16_t>::max()) {
       return lexerError(LexerErrorType::INVALID_IDENTIFIER_LENGTH);
     }
 
-    std::string_view lexeme(source.data() + lexeme_start,
-                            lexeme_end - lexeme_start);
+    std::string_view lexeme(source.data() + lex_start, lex_end - lex_start);
 
     // Try to cast it to a keyword. If it fails, it will return an unknown
     // keword meaning that it is an identifier.
@@ -65,17 +132,18 @@ namespace compiler {
     // If the lexeme is not a kewword, return it as an identifier
     if (kw == Keyword::UNDEFINED) {
       Token tok{TokenType::IDENTIFIER};
-      tok.value.identifier.name = lexeme;
+      tok.value.identifier = {.start = static_cast<uint16_t>(lex_start),
+                              .end = static_cast<uint16_t>(lex_end)};
       return tok;
     }
 
     // If the keyword is a boolean literal, return it as a literal
     if (kw == Keyword::TRUE) {
-      Token tok{TokenType::BOOLEAN_LITERAL};
+      Token tok{TokenType::BOOL_LITERAL};
       tok.value.literal.boolean = true;
       return tok;
     } else if (kw == Keyword::FALSE) {
-      Token tok{TokenType::BOOLEAN_LITERAL};
+      Token tok{TokenType::BOOL_LITERAL};
       tok.value.literal.boolean = false;
       return tok;
     }
@@ -87,51 +155,39 @@ namespace compiler {
   }
 
   Lexer::LexerResult Lexer::makeNumberLiteral() {
-    uint8_t base = 10;
-    uint64_t lexeme_start = pos;
+    uint32_t lex_start = pos;
 
-    // Check for hexadecimal, octal, or binary prefix
-    if (peek() == '0') {
-      char next_char = peekNext();
-      if (next_char == 'x' || next_char == 'X') {
-        // Consume 0x
-        next();
-        next();
-        base = 16;
-        lexeme_start += 2;
-      } else if (next_char == 'b' || next_char == 'B') {
-        // Consume 0b
-        next();
-        next();
-        base = 2;
-        lexeme_start += 2;
-      } else if (isdigit(next_char)) {
-        // Consume 0
-        next();
-        base = 8;
-        lexeme_start += 1;
-      }
-    }
+    // Obtains the base from prefix and consumes the chars that represent them
+    uint8_t base = basePrefixFrom(lex_start);
+
+    // Capture numeric part
+    uint64_t lex_end = nextWhile([](char c) { return (bool)isalnum(c); });
+    std::string_view number_literal(source.data() + lex_start,
+                                    lex_end - lex_start);
 
     // Handle floating-point numbers (only for decimal)
     if (base == 10 && peek() == '.') {
       next();  // Consume '.'
-      uint64_t lexeme_end = peekWhile([](char c) { return (bool)isdigit(c); });
-      std::string_view float_literal(source.data() + lexeme_start,
-                                     lexeme_end - lexeme_start);
+      uint32_t sufix_end = nextWhile([](char c) { return (bool)isdigit(c); });
+      std::string_view float_literal(source.data() + lex_start,
+                                     sufix_end - lex_start);
 
       auto num_result = toFloat(float_literal);
       if (!num_result) return std::unexpected(num_result.error());
 
-      Token tok{TokenType::FLOATING_LITERAL};
-      tok.value.literal.integer = *num_result;
+      // Obtain token type fomr sufix (if any)
+      TokenType type = typeSufixFrom();
+      type = (type == TokenType::INT32_LITERAL) ? TokenType::FLOAT32_LITERAL
+                                                : type;
+
+      if (type == TokenType::ENDOF) {
+        return lexerError(LexerErrorType::UNEXPECTED_RADIX_SUFIX);
+      }
+
+      Token tok{.type = type};
+      tok.value.literal.floating = *num_result;
       return tok;
     }
-
-    // Capture numeric part
-    uint64_t lexeme_end = peekWhile([](char c) { return (bool)isalnum(c); });
-    std::string_view number_literal(source.data() + lexeme_start,
-                                    lexeme_end - lexeme_start);
 
     // Validate number matches base rules
     if (number_literal.empty()) {
@@ -145,19 +201,30 @@ namespace compiler {
       }
     }
 
+    TokenType type = typeSufixFrom();
+    if (type == TokenType::ENDOF) {
+      return lexerError(LexerErrorType::UNEXPECTED_RADIX_SUFIX);
+    }
+
     // Convert integer based on detected base
     auto num_result = toInt(number_literal, base);
     if (!num_result) return std::unexpected(num_result.error());
 
-    Token tok{TokenType::INTEGER_LITERAL};
-    tok.value.literal.integer = *num_result;
+    Token tok{type};
+
+    if (type == TokenType::FLOAT32_LITERAL ||
+        type == TokenType::FLOAT64_LITERAL) {
+      tok.value.literal.floating = *num_result;
+    } else {
+      tok.value.literal.integer = *num_result;
+    }
     return tok;
   }
 
   Lexer::LexerResult Lexer::makeStringLiteral() {
     next();  // consume starting "
 
-    std::string string_literal;
+    string_lit literal{.start = pos, .end = pos};
     bool balanced = false;
     bool in_escape_mode = false;
 
@@ -181,15 +248,15 @@ namespace compiler {
         break;
       }
 
-      string_literal.push_back(c);
+      literal.end++;
     }
 
     if (!balanced) {
       return lexerError(LexerErrorType::UNCLOSED_STRING_LITERAL);
     }
 
-    Token tok{TokenType::STRING_LITERAL};
-    tok.value.literal.string = string_literal;
+    Token tok{TokenType::STR8_LITERAL};
+    tok.value.literal.string = literal;
     return tok;
   }
 
@@ -217,11 +284,10 @@ namespace compiler {
   }
 
   Lexer::LexerResult Lexer::makePunctuator() {
-    uint64_t punc_start = pos;
-    uint64_t punc_end = peekWhile([this](char p) { return isPunctuator(p); });
+    uint64_t lex_start = pos;
+    uint64_t lex_end = nextWhile([this](char p) { return isBasicPunc(p); });
 
-    std::string_view punc_view(source.data() + punc_start,
-                               punc_end - punc_start);
+    std::string_view punc_view(source.data() + lex_start, lex_end - lex_start);
 
     bool is_comment = false;
 
@@ -335,7 +401,7 @@ namespace compiler {
     }
   }
 
-  bool Lexer::isPunctuator(char c) const noexcept {
+  bool Lexer::isBasicPunc(char c) const noexcept {
     switch (c) {
       case '@':
       case '#':
@@ -383,13 +449,87 @@ namespace compiler {
         return c == '0' || c == '1';
       case 8:
         return c >= '0' && c <= '7';
-      case 10:
-        return (bool)isdigit(c);
       case 16:
         return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
       default:
-        return false;  // Invalid base (should never happen)
+        return true;
     }
+  }
+
+  TokenType Lexer::typeSufixFrom() noexcept {
+    uint32_t sufix_end = pos;
+    uint32_t sufix_start = pos - 2;
+    std::string_view sufix(source.data() + sufix_start,
+                           sufix_end - sufix_start);
+
+    while (!sufix.empty() && !isalpha(sufix.at(0))) {
+      sufix.remove_prefix(1);
+    }
+
+    if (sufix.empty()) {
+      return TokenType::INT32_LITERAL;
+    }
+
+    if (sufix == "u" || sufix == "U") {
+      return TokenType::UINT32_LITERAL;
+    }
+
+    if (sufix == "ul" || sufix == "UL") {
+      return TokenType::UINT64_LITERAL;
+    }
+
+    if (sufix == "i" || sufix == "I") {
+      return TokenType::INT32_LITERAL;
+    }
+
+    if (sufix == "il" || sufix == "IL") {
+      return TokenType::INT64_LITERAL;
+    }
+
+    if (sufix == "f" || sufix == "F") {
+      return TokenType::FLOAT32_LITERAL;
+    }
+
+    if (sufix == "l" || sufix == "L") {
+      return TokenType::FLOAT64_LITERAL;
+    }
+
+    return TokenType::ENDOF;
+  }
+
+  uint8_t Lexer::basePrefixFrom(uint32_t& lex_start) noexcept {
+    // If number doesnt have a prefix, default base is 10
+    if (peek() != '0') {
+      return 10;
+    }
+
+    char next_char = peekNext();
+
+    // Consume 0x
+    if (next_char == 'x' || next_char == 'X') {
+      next();
+      next();
+      lex_start += 2;
+      return 16;
+    }
+
+    // Consume 0b
+    if (next_char == 'b' || next_char == 'B') {
+      next();
+      next();
+      lex_start += 2;
+      return 2;
+    }
+
+    // Consume 0
+    if (isdigit(next_char)) {
+      next();
+      lex_start += 1;
+      return 8;
+    }
+
+    // Default case is 10
+    return 10;
   }
 
   char Lexer::toEscapedChar(char c) const noexcept {

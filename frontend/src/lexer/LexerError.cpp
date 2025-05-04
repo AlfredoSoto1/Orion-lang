@@ -38,6 +38,8 @@ namespace compiler {
         return "Invalid numeric literal format.";
       case LexerErrorType::UNEXPECTED_RADIX_PREFIX:
         return "Unexpected or incorrect use of radix prefix.";
+      case LexerErrorType::UNEXPECTED_RADIX_SUFIX:
+        return "Unexpected or incorrect use of radix sufix.";
       case LexerErrorType::OVERFLOW_NUMBER_LITERAL:
         return "Numeric literal exceeds the maximum storage capacity.";
 
