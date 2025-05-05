@@ -74,6 +74,10 @@
     "span": "cpp",
     "algorithm": "cpp",
     "cassert": "cpp",
-    "bitset": "cpp"
+    "bitset": "cpp",
+    "set": "cpp",
+    "xtree": "cpp",
+    "queue": "cpp",
+    "map": "cpp"
   }
 }

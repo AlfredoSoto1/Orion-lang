@@ -204,14 +204,24 @@ namespace compiler {
     ParamsAST params_list;
   };
 
+  /**
+   * @brief Represents a terminal symbol in the RHS of the grammar.
+   *
+   */
   union Terminal {
     Keyword keyword;        // Keyword
     Punctuator punctuator;  // Punctuator
     uint8_t ident_or_lit;   // Identifier or literal
   };
 
+  /**
+   * @brief Represents a non-terminal symbol in the RHS of the grammar rule.
+   *        This let know the parsing machine to keep moving between states.
+   *
+   */
   enum class NonTerminal : uint8_t {
     UNKNOWN = 0,
+    TEMP_START,
     // https://www.lysator.liu.se/c/ANSI-C-grammar-y.html#direct-declarator
     EXPR,
     PRIMARY_EXPR,
@@ -282,20 +292,52 @@ namespace compiler {
     FUNCTION_DEFINITION,
   };
 
+  /**
+   * @brief Unit representation of a symbol. It can either be a terminal or a
+   *        non-terminal.
+   *
+   */
   struct Symbol {
     enum class Type : uint8_t {
       UNKNOWN = 0,
-      DEPENDS_ON_CONTEXT,
       NON_TERMINAL,
       KEYWORD,
       IDENTIFIER,
       PUNCTUATOR,
       LITERAL,
+      ENDOF,
     } type;
     union {
       Terminal terminal;
       NonTerminal nonterminal;
     };
+
+    bool operator==(const Symbol& b) const {
+      if (this->type != b.type) return false;
+
+      switch (this->type) {
+        case Symbol::Type::NON_TERMINAL:
+          return this->nonterminal == b.nonterminal;
+
+        case Symbol::Type::KEYWORD:
+        case Symbol::Type::IDENTIFIER:
+        case Symbol::Type::PUNCTUATOR:
+        case Symbol::Type::LITERAL:
+          return this->terminal.ident_or_lit == b.terminal.ident_or_lit;
+
+        case Symbol::Type::ENDOF:
+        case Symbol::Type::UNKNOWN:
+          // Assume these have no additional data
+          return true;
+      }
+
+      return false;  // fallback for completeness
+    }
+  };
+
+  struct RuleNew {
+    Symbol lhs;
+    std::vector<Symbol> rhs;
   };
 
   union Rule {
@@ -327,4 +369,57 @@ namespace compiler {
              a.i5 == b.i5;
     }
   };
+
+  struct SymbolHash {
+    std::size_t operator()(const Symbol& s) const {
+      std::size_t h = std::hash<uint8_t>{}(static_cast<uint8_t>(s.type));
+      switch (s.type) {
+        case Symbol::Type::NON_TERMINAL:
+          h ^= std::hash<uint8_t>{}(static_cast<uint8_t>(s.nonterminal)) << 1;
+          break;
+        case Symbol::Type::KEYWORD:
+        case Symbol::Type::PUNCTUATOR:
+        case Symbol::Type::IDENTIFIER:
+        case Symbol::Type::LITERAL:
+          h ^= std::hash<uint8_t>{}(s.terminal.ident_or_lit) << 1;
+          break;
+        default:
+          break;
+      }
+      return h;
+    }
+  };
+
+  struct SymbolEqual {
+    bool operator()(const Symbol& a, const Symbol& b) const {
+      if (a.type != b.type) return false;
+      switch (a.type) {
+        case Symbol::Type::NON_TERMINAL:
+          return a.nonterminal == b.nonterminal;
+        case Symbol::Type::KEYWORD:
+        case Symbol::Type::PUNCTUATOR:
+        case Symbol::Type::IDENTIFIER:
+        case Symbol::Type::LITERAL:
+          return a.terminal.ident_or_lit == b.terminal.ident_or_lit;
+        default:
+          return true;
+      }
+    }
+  };
+
+  struct StateSymbolPairHash {
+    std::size_t operator()(const std::pair<uint32_t, Symbol>& p) const {
+      std::size_t h1 = std::hash<uint32_t>{}(p.first);
+      std::size_t h2 = SymbolHash{}(p.second);
+      return h1 ^ (h2 << 1);
+    }
+  };
+
+  struct StateSymbolPairEqual {
+    bool operator()(const std::pair<uint32_t, Symbol>& a,
+                    const std::pair<uint32_t, Symbol>& b) const {
+      return a.first == b.first && SymbolEqual{}(a.second, b.second);
+    }
+  };
+
 }  // namespace compiler

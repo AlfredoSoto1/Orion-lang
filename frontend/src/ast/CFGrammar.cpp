@@ -607,7 +607,7 @@
 //     };
 
 //     // struct_or_union_specifier → struct_or_union '{'
-//     struct_declaration_list
+//     // struct_declaration_list
 //     // '}'
 //     rule(makeNt(NT::STRUCT_OR_UNION),          //
 //          makePn(PU::LBRACE),                   //
@@ -1214,7 +1214,7 @@
 //     };
 
 //     // iteration_statement → FOR '(' expression_statement
-//     expression_statement
+//     // expression_statement
 //     // ')' statement
 //     rule(makeKw(KW::FOR),                   //
 //          makePn(PU::LPAREN),                //
@@ -1226,7 +1226,7 @@
 //     };
 
 //     // iteration_statement → FOR '(' expression_statement
-//     expression_statement
+//     // expression_statement
 //     // expression ')' statement
 //     rule(makeKw(KW::FOR),                   //
 //          makePn(PU::LPAREN),                //
