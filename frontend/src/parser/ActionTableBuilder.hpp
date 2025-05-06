@@ -11,8 +11,16 @@
 
 namespace compiler {
 
-  using Grammar = std::unordered_map<NonTerminal, std::vector<Symbol>>;
+  /**
+   * @brief
+   *
+   */
+  using Grammar = std::unordered_multimap<NonTerminal, std::vector<Symbol>>;
 
+  /**
+   * @brief
+   *
+   */
   class ActionTableBuilder final {
   public:
     explicit ActionTableBuilder(const Grammar& grammar) noexcept;
@@ -41,79 +49,84 @@ namespace compiler {
       }
     };
 
-    /**
-     * @brief
-     *
-     */
-    struct ItemHasher {
-      size_t operator()(const Item& item) const {
-        return std::hash<uint32_t>()(item.rule_index) ^
-               (std::hash<uint32_t>()(item.dot_position) << 1);
-      }
-    };
+    using ItemSet = std::unordered_set<Item, ItemHasher>;
 
-    /**
-     * @brief
-     *
-     */
-    struct ItemEqual {
-      bool operator()(const Item& lhs, const Item& rhs) const {
-        return lhs.rule_index == rhs.rule_index &&
-               lhs.dot_position == rhs.dot_position;
-      }
-    };
+  private:
+    ItemSet closure(const ItemSet& items);
 
-    struct SymbolHash {
-      std::size_t operator()(const Symbol& s) const {
-        std::size_t h = std::hash<uint8_t>{}(static_cast<uint8_t>(s.type));
-        switch (s.type) {
-          case Symbol::Type::NON_TERMINAL:
-            h ^= std::hash<uint8_t>{}(static_cast<uint8_t>(s.nonterminal)) << 1;
-            break;
-          case Symbol::Type::KEYWORD:
-          case Symbol::Type::PUNCTUATOR:
-          case Symbol::Type::IDENTIFIER:
-          case Symbol::Type::LITERAL:
-            h ^= std::hash<uint8_t>{}(s.terminal.ident_or_lit) << 1;
-            break;
-          default:
-            break;
-        }
-        return h;
-      }
-    };
+    // /**
+    //  * @brief
+    //  *
+    //  */
+    // struct ItemHasher {
+    //   size_t operator()(const Item& item) const {
+    //     return std::hash<uint32_t>()(item.rule_index) ^
+    //            (std::hash<uint32_t>()(item.dot_position) << 1);
+    //   }
+    // };
 
-    struct SymbolEqual {
-      bool operator()(const Symbol& a, const Symbol& b) const {
-        if (a.type != b.type) return false;
-        switch (a.type) {
-          case Symbol::Type::NON_TERMINAL:
-            return a.nonterminal == b.nonterminal;
-          case Symbol::Type::KEYWORD:
-          case Symbol::Type::PUNCTUATOR:
-          case Symbol::Type::IDENTIFIER:
-          case Symbol::Type::LITERAL:
-            return a.terminal.ident_or_lit == b.terminal.ident_or_lit;
-          default:
-            return true;
-        }
-      }
-    };
+    // /**
+    //  * @brief
+    //  *
+    //  */
+    // struct ItemEqual {
+    //   bool operator()(const Item& lhs, const Item& rhs) const {
+    //     return lhs.rule_index == rhs.rule_index &&
+    //            lhs.dot_position == rhs.dot_position;
+    //   }
+    // };
 
-    struct StateSymbolPairHash {
-      std::size_t operator()(const std::pair<uint32_t, Symbol>& p) const {
-        std::size_t h1 = std::hash<uint32_t>{}(p.first);
-        std::size_t h2 = SymbolHash{}(p.second);
-        return h1 ^ (h2 << 1);
-      }
-    };
+    // struct SymbolHash {
+    //   std::size_t operator()(const Symbol& s) const {
+    //     std::size_t h = std::hash<uint8_t>{}(static_cast<uint8_t>(s.type));
+    //     switch (s.type) {
+    //       case Symbol::Type::NON_TERMINAL:
+    //         h ^= std::hash<uint8_t>{}(static_cast<uint8_t>(s.nonterminal)) <<
+    //         1; break;
+    //       case Symbol::Type::KEYWORD:
+    //       case Symbol::Type::PUNCTUATOR:
+    //       case Symbol::Type::IDENTIFIER:
+    //       case Symbol::Type::LITERAL:
+    //         h ^= std::hash<uint8_t>{}(s.terminal.ident_or_lit) << 1;
+    //         break;
+    //       default:
+    //         break;
+    //     }
+    //     return h;
+    //   }
+    // };
 
-    struct StateSymbolPairEqual {
-      bool operator()(const std::pair<uint32_t, Symbol>& a,
-                      const std::pair<uint32_t, Symbol>& b) const {
-        return a.first == b.first && SymbolEqual{}(a.second, b.second);
-      }
-    };
+    // struct SymbolEqual {
+    //   bool operator()(const Symbol& a, const Symbol& b) const {
+    //     if (a.type != b.type) return false;
+    //     switch (a.type) {
+    //       case Symbol::Type::NON_TERMINAL:
+    //         return a.nonterminal == b.nonterminal;
+    //       case Symbol::Type::KEYWORD:
+    //       case Symbol::Type::PUNCTUATOR:
+    //       case Symbol::Type::IDENTIFIER:
+    //       case Symbol::Type::LITERAL:
+    //         return a.terminal.ident_or_lit == b.terminal.ident_or_lit;
+    //       default:
+    //         return true;
+    //     }
+    //   }
+    // };
+
+    // struct StateSymbolPairHash {
+    //   std::size_t operator()(const std::pair<uint32_t, Symbol>& p) const {
+    //     std::size_t h1 = std::hash<uint32_t>{}(p.first);
+    //     std::size_t h2 = SymbolHash{}(p.second);
+    //     return h1 ^ (h2 << 1);
+    //   }
+    // };
+
+    // struct StateSymbolPairEqual {
+    //   bool operator()(const std::pair<uint32_t, Symbol>& a,
+    //                   const std::pair<uint32_t, Symbol>& b) const {
+    //     return a.first == b.first && SymbolEqual{}(a.second, b.second);
+    //   }
+    // };
 
     /**
      * @brief
@@ -127,32 +140,32 @@ namespace compiler {
       };
     };
 
-    using ActionTable =
-        std::unordered_map<std::pair<uint32_t, Symbol>, Action,
-                           StateSymbolPairHash, StateSymbolPairEqual>;
+    // using ActionTable =
+    //     std::unordered_map<std::pair<uint32_t, Symbol>, Action,
+    //                        StateSymbolPairHash, StateSymbolPairEqual>;
 
-    using ItemSet = std::unordered_set<Item, ItemHasher, ItemEqual>;
-    using SymbolSet = std::unordered_set<Symbol, SymbolHash, SymbolEqual>;
+    // using ItemSet = std::unordered_set<Item, ItemHasher, ItemEqual>;
+    // using SymbolSet = std::unordered_set<Symbol, SymbolHash, SymbolEqual>;
 
-    struct ItemSetHasher {
-      size_t operator()(const ActionTableBuilder::ItemSet& items) const {
-        size_t seed = items.size();
-        for (const auto& item : items) {
-          seed ^= std::hash<size_t>{}(item.rule_index) + 0x9e3779b9 +
-                  (seed << 6) + (seed >> 2);
-          seed ^= std::hash<size_t>{}(item.dot_position) + 0x9e3779b9 +
-                  (seed << 6) + (seed >> 2);
-        }
-        return seed;
-      }
-    };
+    // struct ItemSetHasher {
+    //   size_t operator()(const ActionTableBuilder::ItemSet& items) const {
+    //     size_t seed = items.size();
+    //     for (const auto& item : items) {
+    //       seed ^= std::hash<size_t>{}(item.rule_index) + 0x9e3779b9 +
+    //               (seed << 6) + (seed >> 2);
+    //       seed ^= std::hash<size_t>{}(item.dot_position) + 0x9e3779b9 +
+    //               (seed << 6) + (seed >> 2);
+    //     }
+    //     return seed;
+    //   }
+    // };
 
-    struct ItemSetEqual {
-      bool operator()(const ActionTableBuilder::ItemSet& a,
-                      const ActionTableBuilder::ItemSet& b) const {
-        return a == b;  // Rely on std::set's equality operator
-      }
-    };
+    // struct ItemSetEqual {
+    //   bool operator()(const ActionTableBuilder::ItemSet& a,
+    //                   const ActionTableBuilder::ItemSet& b) const {
+    //     return a == b;  // Rely on std::set's equality operator
+    //   }
+    // };
 
   public:
     // std::string symbolToString(const Symbol& s);

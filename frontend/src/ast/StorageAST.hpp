@@ -221,7 +221,20 @@ namespace compiler {
    */
   enum class NonTerminal : uint8_t {
     UNKNOWN = 0,
-    TEMP_START,
+
+    // Expr    → Expr + Term
+    //     | Term
+
+    // Term    → Term * Factor
+    //         | Factor
+
+    // Factor  → ( Expr )
+    //         | number
+
+    Expr,
+    Term,
+    Factor,
+
     // https://www.lysator.liu.se/c/ANSI-C-grammar-y.html#direct-declarator
     EXPR,
     PRIMARY_EXPR,

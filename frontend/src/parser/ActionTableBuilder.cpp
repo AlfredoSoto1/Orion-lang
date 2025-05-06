@@ -170,8 +170,6 @@ namespace compiler {
     // }
   }
 
-  void ActionTableBuilder::build() {}
-
   // std::string ActionTableBuilder::symbolToString(const Symbol& s) {
   //   switch (s.type) {
   //     case Symbol::Type::IDENTIFIER:
@@ -190,57 +188,61 @@ namespace compiler {
   //   }
   // }
 
-  // ActionTableBuilder::ItemSet ActionTableBuilder::closure(
-  //     const ItemSet& items, const std::vector<RuleNew>& rules) {
-  //   // Prepare item set result and stop condition flag
-  //   bool changed = true;
-  //   ItemSet result = items;
+  void ActionTableBuilder::build() {
+    //
+  }
 
-  //   while (changed) {
-  //     changed = false;
-  //     ItemSet new_items;
+  ActionTableBuilder::ItemSet ActionTableBuilder::closure(
+      const ItemSet& items) {
+    // Prepare item set result and stop condition flag
+    bool changed = true;
+    ItemSet result = items;
 
-  //     // For every item obtain the rule associated
-  //     for (const auto& item : result) {
-  //       const RuleNew& rule = rules[item.rule_index];
+    while (changed) {
+      changed = false;
+      ItemSet new_items;
 
-  //       // Make sure the position hasnt reached the end of the rule
-  //       if (item.dot_position >= rule.rhs.size()) {
-  //         continue;
-  //       }
+      // For every item obtain the rule associated
+      for (const auto& item : result) {
+        const RuleNew& rule = rules[item.rule_index];
 
-  //       // Obtain the symbol from the current position
-  //       const Symbol& sym = rule.rhs[item.dot_position];
+        // Make sure the position hasnt reached the end of the rule
+        if (item.dot_position >= rule.rhs.size()) {
+          continue;
+        }
 
-  //       // If its a terminal, continue
-  //       if (sym.type != Symbol::Type::NON_TERMINAL) {
-  //         continue;
-  //       }
+        // Obtain the symbol from the current position
+        const Symbol& sym = rule.rhs[item.dot_position];
 
-  //       // Look for the LHS non-terminal that matches the RHS of the current
-  //       // rule we are scanning.
-  //       for (size_t i = 0; i < rules.size(); ++i) {
-  //         if (rules[i].lhs != sym) {
-  //           continue;
-  //         }
+        // If its a terminal, continue
+        if (sym.type != Symbol::Type::NON_TERMINAL) {
+          continue;
+        }
 
-  //         LR0Item new_item{i, 0};
+        // Look for the LHS non-terminal that matches the RHS of the current
+        // rule we are scanning.
+        for (size_t i = 0; i < rules.size(); ++i) {
+          if (rules[i].lhs != sym) {
+            continue;
+          }
 
-  //         // Make sure the new_item doesn't exist in set.
-  //         if (result.find(new_item) != result.end()) {
-  //           continue;
-  //         }
+          LR0Item new_item{i, 0};
 
-  //         new_items.insert(new_item);
-  //         changed = true;
-  //       }
-  //     }
+          // Make sure the new_item doesn't exist in set.
+          if (result.find(new_item) != result.end()) {
+            continue;
+          }
 
-  //     result.insert(new_items.begin(), new_items.end());
-  //   }
+          new_items.insert(new_item);
+          changed = true;
+        }
+      }
 
-  //   return result;
-  // }
+      result.insert(new_items.begin(), new_items.end());
+    }
+
+    return result;
+  }
 
   // ActionTableBuilder::ItemSet ActionTableBuilder::goTo(
   //     const ItemSet& items, const Symbol& sym,
