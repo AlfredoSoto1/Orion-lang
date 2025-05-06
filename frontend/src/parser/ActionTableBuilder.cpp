@@ -4,7 +4,8 @@
 #include <stack>
 
 namespace compiler {
-  ActionTableBuilder::ActionTableBuilder() {
+  ActionTableBuilder::ActionTableBuilder(const Grammar& grammar) noexcept
+      : grammar(grammar) {
     // // === STEP 1: Build Action Table and get rules ===
     // std::vector<RuleNew> rules;
 
@@ -169,277 +170,280 @@ namespace compiler {
     // }
   }
 
-  std::string ActionTableBuilder::symbolToString(const Symbol& s) {
-    switch (s.type) {
-      case Symbol::Type::IDENTIFIER:
-        return "IDENTIFIER";
-      case Symbol::Type::LITERAL:
-        return "CONSTANT";
-      case Symbol::Type::PUNCTUATOR:
-        return "PUNCTUATOR_" +
-               std::to_string(static_cast<int>(s.terminal.punctuator));
-      case Symbol::Type::NON_TERMINAL:
-        return "NT_" + std::to_string(static_cast<int>(s.nonterminal));
-      case Symbol::Type::ENDOF:
-        return "ENDOF";
-      default:
-        return "UNKNOWN";
-    }
-  }
+  void ActionTableBuilder::build() {}
 
-  ActionTableBuilder::ItemSet ActionTableBuilder::closure(
-      const ItemSet& items, const std::vector<RuleNew>& rules) {
-    // Prepare item set result and stop condition flag
-    bool changed = true;
-    ItemSet result = items;
+  // std::string ActionTableBuilder::symbolToString(const Symbol& s) {
+  //   switch (s.type) {
+  //     case Symbol::Type::IDENTIFIER:
+  //       return "IDENTIFIER";
+  //     case Symbol::Type::LITERAL:
+  //       return "CONSTANT";
+  //     case Symbol::Type::PUNCTUATOR:
+  //       return "PUNCTUATOR_" +
+  //              std::to_string(static_cast<int>(s.terminal.punctuator));
+  //     case Symbol::Type::NON_TERMINAL:
+  //       return "NT_" + std::to_string(static_cast<int>(s.nonterminal));
+  //     case Symbol::Type::ENDOF:
+  //       return "ENDOF";
+  //     default:
+  //       return "UNKNOWN";
+  //   }
+  // }
 
-    while (changed) {
-      changed = false;
-      ItemSet new_items;
+  // ActionTableBuilder::ItemSet ActionTableBuilder::closure(
+  //     const ItemSet& items, const std::vector<RuleNew>& rules) {
+  //   // Prepare item set result and stop condition flag
+  //   bool changed = true;
+  //   ItemSet result = items;
 
-      // For every item obtain the rule associated
-      for (const auto& item : result) {
-        const RuleNew& rule = rules[item.rule_index];
+  //   while (changed) {
+  //     changed = false;
+  //     ItemSet new_items;
 
-        // Make sure the position hasnt reached the end of the rule
-        if (item.dot_position >= rule.rhs.size()) {
-          continue;
-        }
+  //     // For every item obtain the rule associated
+  //     for (const auto& item : result) {
+  //       const RuleNew& rule = rules[item.rule_index];
 
-        // Obtain the symbol from the current position
-        const Symbol& sym = rule.rhs[item.dot_position];
+  //       // Make sure the position hasnt reached the end of the rule
+  //       if (item.dot_position >= rule.rhs.size()) {
+  //         continue;
+  //       }
 
-        // If its a terminal, continue
-        if (sym.type != Symbol::Type::NON_TERMINAL) {
-          continue;
-        }
+  //       // Obtain the symbol from the current position
+  //       const Symbol& sym = rule.rhs[item.dot_position];
 
-        // Look for the LHS non-terminal that matches the RHS of the current
-        // rule we are scanning.
-        for (size_t i = 0; i < rules.size(); ++i) {
-          if (rules[i].lhs != sym) {
-            continue;
-          }
+  //       // If its a terminal, continue
+  //       if (sym.type != Symbol::Type::NON_TERMINAL) {
+  //         continue;
+  //       }
 
-          LR0Item new_item{i, 0};
+  //       // Look for the LHS non-terminal that matches the RHS of the current
+  //       // rule we are scanning.
+  //       for (size_t i = 0; i < rules.size(); ++i) {
+  //         if (rules[i].lhs != sym) {
+  //           continue;
+  //         }
 
-          // Make sure the new_item doesn't exist in set.
-          if (result.find(new_item) != result.end()) {
-            continue;
-          }
+  //         LR0Item new_item{i, 0};
 
-          new_items.insert(new_item);
-          changed = true;
-        }
-      }
+  //         // Make sure the new_item doesn't exist in set.
+  //         if (result.find(new_item) != result.end()) {
+  //           continue;
+  //         }
 
-      result.insert(new_items.begin(), new_items.end());
-    }
+  //         new_items.insert(new_item);
+  //         changed = true;
+  //       }
+  //     }
 
-    return result;
-  }
+  //     result.insert(new_items.begin(), new_items.end());
+  //   }
 
-  ActionTableBuilder::ItemSet ActionTableBuilder::goTo(
-      const ItemSet& items, const Symbol& sym,
-      const std::vector<RuleNew>& rules) {
-    ItemSet moved;
+  //   return result;
+  // }
 
-    // For each item, obtain the rule associated
-    for (const auto& item : items) {
-      const RuleNew& rule = rules[item.rule_index];
+  // ActionTableBuilder::ItemSet ActionTableBuilder::goTo(
+  //     const ItemSet& items, const Symbol& sym,
+  //     const std::vector<RuleNew>& rules) {
+  //   ItemSet moved;
 
-      // Check if the item hasnt completed a full rhs grammar rule
-      // and if the symbol is expected at the dot position of the item.
-      if (item.dot_position < rule.rhs.size() &&
-          rule.rhs[item.dot_position] == sym) {
-        moved.insert({item.rule_index, item.dot_position + 1});
-      }
-    }
+  //   // For each item, obtain the rule associated
+  //   for (const auto& item : items) {
+  //     const RuleNew& rule = rules[item.rule_index];
 
-    return closure(moved, rules);
-  }
+  //     // Check if the item hasnt completed a full rhs grammar rule
+  //     // and if the symbol is expected at the dot position of the item.
+  //     if (item.dot_position < rule.rhs.size() &&
+  //         rule.rhs[item.dot_position] == sym) {
+  //       moved.insert({item.rule_index, item.dot_position + 1});
+  //     }
+  //   }
 
-  ActionTableBuilder::SymbolSet ActionTableBuilder::allSymbols(
-      const std::vector<RuleNew>& rules) {
-    SymbolSet symbols;
+  //   return closure(moved, rules);
+  // }
 
-    // Add the LHS (left-hand side) of each rule
-    for (const RuleNew& rule : rules) {
-      symbols.insert(rule.lhs);
-    }
+  // ActionTableBuilder::SymbolSet ActionTableBuilder::allSymbols(
+  //     const std::vector<RuleNew>& rules) {
+  //   SymbolSet symbols;
 
-    // Add the RHS (right-hand side) symbols of each rule
-    for (const RuleNew& rule : rules) {
-      for (const Symbol& symbol : rule.rhs) {
-        symbols.insert(symbol);
-      }
-    }
+  //   // Add the LHS (left-hand side) of each rule
+  //   for (const RuleNew& rule : rules) {
+  //     symbols.insert(rule.lhs);
+  //   }
 
-    return symbols;
-  }
+  //   // Add the RHS (right-hand side) symbols of each rule
+  //   for (const RuleNew& rule : rules) {
+  //     for (const Symbol& symbol : rule.rhs) {
+  //       symbols.insert(symbol);
+  //     }
+  //   }
 
-  ActionTableBuilder::SymbolSet ActionTableBuilder::allTerminals(
-      const std::vector<RuleNew>& rules) {
-    SymbolSet terminals;
+  //   return symbols;
+  // }
 
-    for (const RuleNew& rule : rules) {
-      for (const Symbol& symbol : rule.rhs) {
-        if (symbol.type != Symbol::Type::NON_TERMINAL) {
-          terminals.insert(symbol);
-        }
-      }
-    }
+  // ActionTableBuilder::SymbolSet ActionTableBuilder::allTerminals(
+  //     const std::vector<RuleNew>& rules) {
+  //   SymbolSet terminals;
 
-    return terminals;
-  }
+  //   for (const RuleNew& rule : rules) {
+  //     for (const Symbol& symbol : rule.rhs) {
+  //       if (symbol.type != Symbol::Type::NON_TERMINAL) {
+  //         terminals.insert(symbol);
+  //       }
+  //     }
+  //   }
 
-  std::vector<ActionTableBuilder::ItemSet> ActionTableBuilder::buildStates(
-      const std::vector<RuleNew>& rules) {
-    std::vector<ItemSet> states;
-    std::unordered_map<ItemSet, uint32_t, ItemSetHasher, ItemSetEqual>
-        state_ids;
+  //   return terminals;
+  // }
 
-    // Create the initial item set (closure of the augmented start rule)
-    if (rules.empty()) {
-      return states;
-    }
+  // std::vector<ActionTableBuilder::ItemSet> ActionTableBuilder::buildStates(
+  //     const std::vector<RuleNew>& rules) {
+  //   std::vector<ItemSet> states;
+  //   std::unordered_map<ItemSet, uint32_t, ItemSetHasher, ItemSetEqual>
+  //       state_ids;
 
-    // Assume the LHS of the first rule is the start symbol for augmentation
-    Symbol start_symbol = rules[0].lhs;
-    Symbol augmented_start_symbol;
-    augmented_start_symbol.type = Symbol::Type::NON_TERMINAL;
-    augmented_start_symbol.nonterminal = NonTerminal::TEMP_START;
-    RuleNew augmented_rule{augmented_start_symbol, {start_symbol}};
+  //   // Create the initial item set (closure of the augmented start rule)
+  //   if (rules.empty()) {
+  //     return states;
+  //   }
 
-    std::vector<RuleNew> augmented_rules = {augmented_rule};
-    augmented_rules.insert(augmented_rules.end(), rules.begin(), rules.end());
+  //   // Assume the LHS of the first rule is the start symbol for augmentation
+  //   Symbol start_symbol = rules[0].lhs;
+  //   Symbol augmented_start_symbol;
+  //   augmented_start_symbol.type = Symbol::Type::NON_TERMINAL;
+  //   augmented_start_symbol.nonterminal = NonTerminal::TEMP_START;
+  //   RuleNew augmented_rule{augmented_start_symbol, {start_symbol}};
 
-    ItemSet initial_items = closure({{0, 0}}, augmented_rules);
-    states.push_back(initial_items);
-    state_ids[initial_items] = 0;
+  //   std::vector<RuleNew> augmented_rules = {augmented_rule};
+  //   augmented_rules.insert(augmented_rules.end(), rules.begin(),
+  //   rules.end());
 
-    std::queue<ItemSet> queue;
-    queue.push(initial_items);
+  //   ItemSet initial_items = closure({{0, 0}}, augmented_rules);
+  //   states.push_back(initial_items);
+  //   state_ids[initial_items] = 0;
 
-    uint32_t next_state_id = 1;
+  //   std::queue<ItemSet> queue;
+  //   queue.push(initial_items);
 
-    // 2. Iterate through the states and compute transitions
-    while (!queue.empty()) {
-      ItemSet current_state = queue.front();
-      queue.pop();
-      uint32_t current_state_index = state_ids[current_state];
+  //   uint32_t next_state_id = 1;
 
-      // Find all possible next symbols from the current state
-      SymbolSet next_symbols;
-      for (const auto& item : current_state) {
-        const RuleNew& rule = augmented_rules[item.rule_index];
-        if (item.dot_position < rule.rhs.size()) {
-          next_symbols.insert(rule.rhs[item.dot_position]);
-        }
-      }
+  //   // 2. Iterate through the states and compute transitions
+  //   while (!queue.empty()) {
+  //     ItemSet current_state = queue.front();
+  //     queue.pop();
+  //     uint32_t current_state_index = state_ids[current_state];
 
-      // For each next symbol, compute the next state (using goTo)
-      for (const auto& symbol : next_symbols) {
-        ItemSet next_state = goTo(current_state, symbol, augmented_rules);
+  //     // Find all possible next symbols from the current state
+  //     SymbolSet next_symbols;
+  //     for (const auto& item : current_state) {
+  //       const RuleNew& rule = augmented_rules[item.rule_index];
+  //       if (item.dot_position < rule.rhs.size()) {
+  //         next_symbols.insert(rule.rhs[item.dot_position]);
+  //       }
+  //     }
 
-        if (!next_state.empty()) {
-          // If the next state hasn't been encountered, add it to the list of
-          // states and the queue
-          if (state_ids.find(next_state) == state_ids.end()) {
-            states.push_back(next_state);
-            state_ids[next_state] = next_state_id++;
-            queue.push(next_state);
-          }
-        }
-      }
-    }
+  //     // For each next symbol, compute the next state (using goTo)
+  //     for (const auto& symbol : next_symbols) {
+  //       ItemSet next_state = goTo(current_state, symbol, augmented_rules);
 
-    return states;
-    // ItemSet start_items = closure({{0, 0}}, rules);
-    // states.push_back(start_items);
-    // state_ids[start_items] = 0;
+  //       if (!next_state.empty()) {
+  //         // If the next state hasn't been encountered, add it to the list of
+  //         // states and the queue
+  //         if (state_ids.find(next_state) == state_ids.end()) {
+  //           states.push_back(next_state);
+  //           state_ids[next_state] = next_state_id++;
+  //           queue.push(next_state);
+  //         }
+  //       }
+  //     }
+  //   }
 
-    // std::queue<ItemSet> queue;
-    // queue.push(start_items);
+  //   return states;
+  //   // ItemSet start_items = closure({{0, 0}}, rules);
+  //   // states.push_back(start_items);
+  //   // state_ids[start_items] = 0;
 
-    // while (!queue.empty()) {
-    //   auto current = queue.front();
-    //   queue.pop();
+  //   // std::queue<ItemSet> queue;
+  //   // queue.push(start_items);
 
-    //   for (const Symbol& symbol : allSymbols(rules)) {
-    //     auto next = goTo(current, symbol, rules);
-    //     if (!next.empty() && state_ids.find(next) == state_ids.end()) {
-    //       state_ids[next] = states.size();
-    //       states.push_back(next);
-    //       queue.push(next);
-    //     }
-    //   }
-    // }
-    //
-    // return states;
-  }
+  //   // while (!queue.empty()) {
+  //   //   auto current = queue.front();
+  //   //   queue.pop();
 
-  void ActionTableBuilder::generateActionTable(
-      const std::vector<RuleNew>& rules, ActionTable& table) {
-    // 1. Build the states (LR(0) item sets)
-    std::vector<ItemSet> states = buildStates(rules);
+  //   //   for (const Symbol& symbol : allSymbols(rules)) {
+  //   //     auto next = goTo(current, symbol, rules);
+  //   //     if (!next.empty() && state_ids.find(next) == state_ids.end()) {
+  //   //       state_ids[next] = states.size();
+  //   //       states.push_back(next);
+  //   //       queue.push(next);
+  //   //     }
+  //   //   }
+  //   // }
+  //   //
+  //   // return states;
+  // }
 
-    // 2. Create a mapping from states to their IDs (indices)
-    std::unordered_map<ItemSet, uint32_t, ItemSetHasher, ItemSetEqual>
-        state_ids;
-    for (size_t i = 0; i < states.size(); ++i) {
-      state_ids[states[i]] = i;
-    }
+  // void ActionTableBuilder::generateActionTable(
+  //     const std::vector<RuleNew>& rules, ActionTable& table) {
+  //   // 1. Build the states (LR(0) item sets)
+  //   std::vector<ItemSet> states = buildStates(rules);
 
-    // 3. Iterate through each state and construct the action table entries
-    for (size_t i = 0; i < states.size(); ++i) {
-      const ItemSet& items = states[i];
+  //   // 2. Create a mapping from states to their IDs (indices)
+  //   std::unordered_map<ItemSet, uint32_t, ItemSetHasher, ItemSetEqual>
+  //       state_ids;
+  //   for (size_t i = 0; i < states.size(); ++i) {
+  //     state_ids[states[i]] = i;
+  //   }
 
-      for (const auto& item : items) {
-        const RuleNew& rule = rules[item.rule_index];
+  //   // 3. Iterate through each state and construct the action table entries
+  //   for (size_t i = 0; i < states.size(); ++i) {
+  //     const ItemSet& items = states[i];
 
-        if (item.dot_position < rule.rhs.size()) {
-          // 3.1. Handle shift actions
-          Symbol symbol = rule.rhs[item.dot_position];
-          ItemSet next_state = goTo(items, symbol, rules);
-          uint32_t next_state_id = state_ids[next_state];
+  //     for (const auto& item : items) {
+  //       const RuleNew& rule = rules[item.rule_index];
 
-          Action shift_action;
-          shift_action.type = Action::SHIFT;
-          shift_action.next_state = next_state_id;
-          table[{i, symbol}] = shift_action;
-        } else {
-          // 3.2. Handle reduce and accept actions
-          if (item.rule_index == 0) {  // Augmented start rule
-            Symbol end_of_input;
-            end_of_input.type = Symbol::Type::ENDOF;
-            Action accept_action;
-            accept_action.type = Action::ACCEPT;
-            table[{i, end_of_input}] = accept_action;
-          } else {
-            // This is where you'd implement SLR(1) logic:
-            // - Calculate FOLLOW(rule.lhs)
-            // - Add reduce actions only for terminals in FOLLOW(rule.lhs)
+  //       if (item.dot_position < rule.rhs.size()) {
+  //         // 3.1. Handle shift actions
+  //         Symbol symbol = rule.rhs[item.dot_position];
+  //         ItemSet next_state = goTo(items, symbol, rules);
+  //         uint32_t next_state_id = state_ids[next_state];
 
-            // For now, we're implementing LR(0): reduce on all terminals.
-            for (const Symbol& terminal : allTerminals(rules)) {
-              Action reduce_action;
-              reduce_action.type = Action::REDUCE;
-              reduce_action.rule_index = item.rule_index;
-              table[{i, terminal}] = reduce_action;
-            }
-            // Add reduce for ENDOF as well for LR(0)
-            Symbol end_of_input;
-            end_of_input.type = Symbol::Type::ENDOF;
-            Action reduce_action;
-            reduce_action.type = Action::REDUCE;
-            reduce_action.rule_index = item.rule_index;
-            table[{i, end_of_input}] = reduce_action;
-          }
-        }
-      }
-    }
-  }
+  //         Action shift_action;
+  //         shift_action.type = Action::SHIFT;
+  //         shift_action.next_state = next_state_id;
+  //         table[{i, symbol}] = shift_action;
+  //       } else {
+  //         // 3.2. Handle reduce and accept actions
+  //         if (item.rule_index == 0) {  // Augmented start rule
+  //           Symbol end_of_input;
+  //           end_of_input.type = Symbol::Type::ENDOF;
+  //           Action accept_action;
+  //           accept_action.type = Action::ACCEPT;
+  //           table[{i, end_of_input}] = accept_action;
+  //         } else {
+  //           // This is where you'd implement SLR(1) logic:
+  //           // - Calculate FOLLOW(rule.lhs)
+  //           // - Add reduce actions only for terminals in FOLLOW(rule.lhs)
+
+  //           // For now, we're implementing LR(0): reduce on all terminals.
+  //           for (const Symbol& terminal : allTerminals(rules)) {
+  //             Action reduce_action;
+  //             reduce_action.type = Action::REDUCE;
+  //             reduce_action.rule_index = item.rule_index;
+  //             table[{i, terminal}] = reduce_action;
+  //           }
+  //           // Add reduce for ENDOF as well for LR(0)
+  //           Symbol end_of_input;
+  //           end_of_input.type = Symbol::Type::ENDOF;
+  //           Action reduce_action;
+  //           reduce_action.type = Action::REDUCE;
+  //           reduce_action.rule_index = item.rule_index;
+  //           table[{i, end_of_input}] = reduce_action;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   // void ActionTableBuilder::generateActionTable(
   //     const std::vector<RuleNew>& rules, ActionTable& table) {

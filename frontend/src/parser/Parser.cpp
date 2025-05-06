@@ -10,85 +10,86 @@ namespace compiler {
 
   Parser::Parser(TokenStream& tokens) noexcept
       : tokens(tokens), grammar(grammar), symbols(), states(), rules() {
-    // Define the symbols
-    Symbol IDENTIFIER;
-    IDENTIFIER.type = Symbol::Type::IDENTIFIER;
-    IDENTIFIER.terminal.ident_or_lit = 0;
+    // // Define the symbols
+    // Symbol IDENTIFIER;
+    // IDENTIFIER.type = Symbol::Type::IDENTIFIER;
+    // IDENTIFIER.terminal.ident_or_lit = 0;
 
-    Symbol CONSTANT;
-    CONSTANT.type = Symbol::Type::LITERAL;
-    CONSTANT.terminal.ident_or_lit = 1;
+    // Symbol CONSTANT;
+    // CONSTANT.type = Symbol::Type::LITERAL;
+    // CONSTANT.terminal.ident_or_lit = 1;
 
-    Symbol EXPR;
-    EXPR.type = Symbol::Type::NON_TERMINAL;
-    EXPR.nonterminal = NonTerminal::EXPR;
+    // Symbol EXPR;
+    // EXPR.type = Symbol::Type::NON_TERMINAL;
+    // EXPR.nonterminal = NonTerminal::EXPR;
 
-    Symbol PRIMARY_EXPR;
-    PRIMARY_EXPR.type = Symbol::Type::NON_TERMINAL;
-    PRIMARY_EXPR.nonterminal = NonTerminal::PRIMARY_EXPR;
+    // Symbol PRIMARY_EXPR;
+    // PRIMARY_EXPR.type = Symbol::Type::NON_TERMINAL;
+    // PRIMARY_EXPR.nonterminal = NonTerminal::PRIMARY_EXPR;
 
-    Symbol ASSIGNMENT_EXPR;
-    ASSIGNMENT_EXPR.type = Symbol::Type::NON_TERMINAL;
-    ASSIGNMENT_EXPR.nonterminal = NonTerminal::ASSIGNMENT_EXPR;
+    // Symbol ASSIGNMENT_EXPR;
+    // ASSIGNMENT_EXPR.type = Symbol::Type::NON_TERMINAL;
+    // ASSIGNMENT_EXPR.nonterminal = NonTerminal::ASSIGNMENT_EXPR;
 
-    Terminal t{.punctuator = Punctuator::EQ};
+    // Terminal t{.punctuator = Punctuator::EQ};
 
-    // Define the rules
-    std::vector<RuleNew> rules = {
-        // Rule 1: EXPR -> IDENTIFIER
-        RuleNew{EXPR, {IDENTIFIER}},
-        // Rule 2: EXPR -> CONSTANT
-        RuleNew{EXPR, {CONSTANT}},
-        // Rule 3: EXPR -> PRIMARY_EXPR
-        RuleNew{EXPR, {PRIMARY_EXPR}},
-        // Rule 4: PRIMARY_EXPR -> IDENTIFIER
-        RuleNew{PRIMARY_EXPR, {IDENTIFIER}},
-        // Rule 5: ASSIGNMENT_EXPR -> IDENTIFIER '=' EXPR
-        RuleNew{ASSIGNMENT_EXPR,
-                {IDENTIFIER, Symbol{Symbol::Type::PUNCTUATOR, t}, EXPR}}};
+    // // Define the rules
+    // std::vector<RuleNew> rules = {
+    //     // Rule 1: EXPR -> IDENTIFIER
+    //     RuleNew{EXPR, {IDENTIFIER}},
+    //     // Rule 2: EXPR -> CONSTANT
+    //     RuleNew{EXPR, {CONSTANT}},
+    //     // Rule 3: EXPR -> PRIMARY_EXPR
+    //     RuleNew{EXPR, {PRIMARY_EXPR}},
+    //     // Rule 4: PRIMARY_EXPR -> IDENTIFIER
+    //     RuleNew{PRIMARY_EXPR, {IDENTIFIER}},
+    //     // Rule 5: ASSIGNMENT_EXPR -> IDENTIFIER '=' EXPR
+    //     RuleNew{ASSIGNMENT_EXPR,
+    //             {IDENTIFIER, Symbol{Symbol::Type::PUNCTUATOR, t}, EXPR}}};
 
-    // Define action table
-    ActionTable actionTable;
+    // // Define action table
+    // ActionTable actionTable;
 
-    // Call the generateActionTable function
-    generateActionTable(rules, actionTable);
+    // // Call the generateActionTable function
+    // generateActionTable(rules, actionTable);
 
-    // Print the action table for verification
-    for (const auto& entry : actionTable) {
-      const auto& [state_symbol, action] = entry;
-      const auto& [state, symbol] = state_symbol;
+    // // Print the action table for verification
+    // for (const auto& entry : actionTable) {
+    //   const auto& [state_symbol, action] = entry;
+    //   const auto& [state, symbol] = state_symbol;
 
-      std::cout << "State: " << state << ", Symbol: " << symbolToString(symbol)
-                << ", Action: ";
-      if (action.type == Action::SHIFT) {
-        std::cout << "SHIFT to state " << action.next_state << "\n";
-      } else if (action.type == Action::REDUCE) {
-        std::cout << "REDUCE using rule " << action.rule_index << "\n";
-      } else if (action.type == Action::ACCEPT) {
-        std::cout << "ACCEPT\n";
-      } else {
-        std::cout << "ERROR\n";
-      }
-    }
+    //   std::cout << "State: " << state << ", Symbol: " <<
+    //   symbolToString(symbol)
+    //             << ", Action: ";
+    //   if (action.type == Action::SHIFT) {
+    //     std::cout << "SHIFT to state " << action.next_state << "\n";
+    //   } else if (action.type == Action::REDUCE) {
+    //     std::cout << "REDUCE using rule " << action.rule_index << "\n";
+    //   } else if (action.type == Action::ACCEPT) {
+    //     std::cout << "ACCEPT\n";
+    //   } else {
+    //     std::cout << "ERROR\n";
+    //   }
+    // }
   }
 
-  std::string Parser::symbolToString(const Symbol& s) {
-    switch (s.type) {
-      case Symbol::Type::IDENTIFIER:
-        return "IDENTIFIER";
-      case Symbol::Type::LITERAL:
-        return "CONSTANT";
-      case Symbol::Type::PUNCTUATOR:
-        return "PUNCTUATOR_" +
-               std::to_string(static_cast<int>(s.terminal.punctuator));
-      case Symbol::Type::NON_TERMINAL:
-        return "NT_" + std::to_string(static_cast<int>(s.nonterminal));
-      case Symbol::Type::ENDOF:
-        return "ENDOF";
-      default:
-        return "UNKNOWN";
-    }
-  }
+  // std::string Parser::symbolToString(const Symbol& s) {
+  //   switch (s.type) {
+  //     case Symbol::Type::IDENTIFIER:
+  //       return "IDENTIFIER";
+  //     case Symbol::Type::LITERAL:
+  //       return "CONSTANT";
+  //     case Symbol::Type::PUNCTUATOR:
+  //       return "PUNCTUATOR_" +
+  //              std::to_string(static_cast<int>(s.terminal.punctuator));
+  //     case Symbol::Type::NON_TERMINAL:
+  //       return "NT_" + std::to_string(static_cast<int>(s.nonterminal));
+  //     case Symbol::Type::ENDOF:
+  //       return "ENDOF";
+  //     default:
+  //       return "UNKNOWN";
+  //   }
+  // }
 
   void Parser::parse() {
     // Initial conditions
@@ -236,47 +237,47 @@ namespace compiler {
     return sym;
   }
 
-  void Parser::generateActionTable(std::vector<RuleNew>& rules,
-                                   ActionTable& actionTable) {
-    uint32_t state = 0;
+  // void Parser::generateActionTable(std::vector<RuleNew>& rules,
+  //                                  ActionTable& actionTable) {
+  //   uint32_t state = 0;
 
-    for (size_t rule_index = 0; rule_index < rules.size(); ++rule_index) {
-      RuleNew& rule = rules[rule_index];
-      state = 0;
+  //   for (size_t rule_index = 0; rule_index < rules.size(); ++rule_index) {
+  //     RuleNew& rule = rules[rule_index];
+  //     state = 0;
 
-      // For each terminal in the RHS, create a shift action
-      for (const Symbol& symbol : rule.rhs) {
-        if (symbol.type != Symbol::Type::NON_TERMINAL) {
-          Action shift_action;
-          shift_action.type = Action::SHIFT;
-          shift_action.next_state = state++;
+  //     // For each terminal in the RHS, create a shift action
+  //     for (const Symbol& symbol : rule.rhs) {
+  //       if (symbol.type != Symbol::Type::NON_TERMINAL) {
+  //         Action shift_action;
+  //         shift_action.type = Action::SHIFT;
+  //         shift_action.next_state = state++;
 
-          actionTable[{state, symbol}] = shift_action;
-        } else {
-          Action reduce_action;
-          reduce_action.type = Action::REDUCE;
-          reduce_action.rule_index = rule_index;
+  //         actionTable[{state, symbol}] = shift_action;
+  //       } else {
+  //         Action reduce_action;
+  //         reduce_action.type = Action::REDUCE;
+  //         reduce_action.rule_index = rule_index;
 
-          actionTable[{state, rule.lhs}] = reduce_action;
-        }
-      }
+  //         actionTable[{state, rule.lhs}] = reduce_action;
+  //       }
+  //     }
 
-      // // Add a REDUCE action on the LHS (symbol to reduce to)
-      // Action reduce_action;
-      // reduce_action.type = Action::REDUCE;
-      // reduce_action.rule_index = rule_index;
+  //     // // Add a REDUCE action on the LHS (symbol to reduce to)
+  //     // Action reduce_action;
+  //     // reduce_action.type = Action::REDUCE;
+  //     // reduce_action.rule_index = rule_index;
 
-      // actionTable[{state, rule.lhs}] = reduce_action;
-    }
+  //     // actionTable[{state, rule.lhs}] = reduce_action;
+  //   }
 
-    // ACCEPT on end-of-file (ENDOF)
-    Symbol endOf;
-    endOf.type = Symbol::Type::ENDOF;
+  //   // ACCEPT on end-of-file (ENDOF)
+  //   Symbol endOf;
+  //   endOf.type = Symbol::Type::ENDOF;
 
-    Action accept_action;
-    accept_action.type = Action::ACCEPT;
-    accept_action.next_state = 0;
+  //   Action accept_action;
+  //   accept_action.type = Action::ACCEPT;
+  //   accept_action.next_state = 0;
 
-    actionTable[{0, endOf}] = accept_action;
-  }
+  //   actionTable[{0, endOf}] = accept_action;
+  // }
 }  // namespace compiler

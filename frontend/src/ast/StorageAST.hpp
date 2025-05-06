@@ -336,7 +336,7 @@ namespace compiler {
   };
 
   struct RuleNew {
-    Symbol lhs;
+    NonTerminal lhs;
     std::vector<Symbol> rhs;
   };
 

@@ -63,9 +63,9 @@ namespace compiler {
     bool reduce();
     ParserResult nextSymbol();
 
-    void generateActionTable(std::vector<RuleNew>& rules,
-                             ActionTable& actionTable);
+    // void generateActionTable(std::vector<RuleNew>& rules,
+    //                          ActionTable& actionTable);
 
-    std::string symbolToString(const Symbol& s);
+    // std::string symbolToString(const Symbol& s);
   };
 }  // namespace compiler
