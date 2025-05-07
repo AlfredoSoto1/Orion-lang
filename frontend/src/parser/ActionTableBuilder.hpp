@@ -15,7 +15,16 @@ namespace compiler {
    * @brief
    *
    */
-  using Grammar = std::unordered_multimap<NonTerminal, std::vector<Symbol>>;
+  struct RuleN {
+    NonTerminal lhs;
+    std::initializer_list<Symbol> rhs;
+  };
+
+  /**
+   * @brief
+   *
+   */
+  using Grammar = std::vector<RuleN>;
 
   /**
    * @brief
@@ -31,10 +40,7 @@ namespace compiler {
      */
     void build();
 
-  private:
-    const Grammar& grammar;
-
-  private:
+  public:
     /**
      * @brief
      *
@@ -49,10 +55,24 @@ namespace compiler {
       }
     };
 
+    /**
+     * @brief
+     *
+     */
+    struct ItemHasher {
+      size_t operator()(const Item& item) const {
+        return std::hash<uint32_t>()(item.rule_index) ^
+               (std::hash<uint32_t>()(item.dot_position) << 1);
+      }
+    };
+
+  public:
+    const Grammar& grammar;
     using ItemSet = std::unordered_set<Item, ItemHasher>;
 
-  private:
+  public:
     ItemSet closure(const ItemSet& items);
+    ItemSet goTo(const ItemSet& items, const Symbol& symbol);
 
     // /**
     //  * @brief

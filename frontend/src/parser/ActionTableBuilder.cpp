@@ -204,7 +204,7 @@ namespace compiler {
 
       // For every item obtain the rule associated
       for (const auto& item : result) {
-        const RuleNew& rule = rules[item.rule_index];
+        const RuleN& rule = grammar[item.rule_index];
 
         // Make sure the position hasnt reached the end of the rule
         if (item.dot_position >= rule.rhs.size()) {
@@ -212,7 +212,9 @@ namespace compiler {
         }
 
         // Obtain the symbol from the current position
-        const Symbol& sym = rule.rhs[item.dot_position];
+        auto it = rule.rhs.begin();
+        std::advance(it, item.dot_position);
+        const Symbol& sym = *it;
 
         // If its a terminal, continue
         if (sym.type != Symbol::Type::NON_TERMINAL) {
@@ -221,12 +223,12 @@ namespace compiler {
 
         // Look for the LHS non-terminal that matches the RHS of the current
         // rule we are scanning.
-        for (size_t i = 0; i < rules.size(); ++i) {
-          if (rules[i].lhs != sym) {
+        for (size_t i = 0; i < grammar.size(); ++i) {
+          if (grammar[i].lhs != sym.nonterminal) {
             continue;
           }
 
-          LR0Item new_item{i, 0};
+          Item new_item{i, 0};
 
           // Make sure the new_item doesn't exist in set.
           if (result.find(new_item) != result.end()) {
@@ -242,6 +244,31 @@ namespace compiler {
     }
 
     return result;
+  }
+
+  ActionTableBuilder::ItemSet ActionTableBuilder::goTo(const ItemSet& items,
+                                                       const Symbol& symbol) {
+    ItemSet moved;
+
+    for (const auto& item : items) {
+      const RuleN& rule = grammar[item.rule_index];
+
+      // Skip if dot is at the end
+      if (item.dot_position >= rule.rhs.size()) continue;
+
+      // Get symbol at the dot position
+      auto it = rule.rhs.begin();
+      std::advance(it, item.dot_position);
+      const Symbol& current = *it;
+
+      // If it matches the input symbol, move the dot forward
+      if (current == symbol) {
+        moved.insert({item.rule_index, item.dot_position + 1});
+      }
+    }
+
+    // Return closure of all advanced items
+    return closure(moved);
   }
 
   // ActionTableBuilder::ItemSet ActionTableBuilder::goTo(
