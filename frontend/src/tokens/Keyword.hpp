@@ -137,7 +137,7 @@ namespace compiler {
      * @param keyword
      * @return str
      */
-    static std::string_view to_string(Keyword kw);
+    static std::string_view toString(Keyword kw);
   };
 
 }  // namespace compiler

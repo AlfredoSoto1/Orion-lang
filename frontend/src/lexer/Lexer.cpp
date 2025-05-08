@@ -19,7 +19,7 @@ namespace compiler {
     switch (token.type) {
       case TokenType::KEYWORD:
         std::cout << "Token: [Keyword: "
-                  << KeywordHandler::to_string(token.value.keyword) << "]"
+                  << KeywordHandler::toString(token.value.keyword) << "]"
                   << std::endl;
         break;
 
@@ -68,7 +68,7 @@ namespace compiler {
 
       case TokenType::PUNCTUATOR:
         std::cout << "Token: [Punctuator: "
-                  << PunctuatorHandler::to_string(token.value.punctuator) << "]"
+                  << PunctuatorHandler::toString(token.value.punctuator) << "]"
                   << std::endl;
         break;
 

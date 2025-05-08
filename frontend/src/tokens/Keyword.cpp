@@ -69,7 +69,7 @@ namespace compiler {
     return (it != keyword_map.end()) ? it->second : Keyword::UNDEFINED;
   }
 
-  std::string_view KeywordHandler::to_string(Keyword kw) {
+  std::string_view KeywordHandler::toString(Keyword kw) {
     switch (kw) {
       case Keyword::IF:
         return "if";

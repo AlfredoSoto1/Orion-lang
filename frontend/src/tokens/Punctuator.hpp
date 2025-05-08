@@ -81,6 +81,6 @@ namespace compiler {
      * @param Punctuator
      * @return str
      */
-    static std::string_view to_string(Punctuator punc);
+    static std::string_view toString(Punctuator punc);
   };
 }  // namespace compiler

@@ -17,7 +17,12 @@ void print_symbol(const Symbol& s) {
       std::cout << "NT(" << static_cast<int>(s.nonterminal) << ")";
       break;
     case Symbol::Type::PUNCTUATOR:
-      std::cout << "P(" << static_cast<int>(s.terminal.punctuator) << ")";
+      std::cout << "P('" << PunctuatorHandler::toString(s.terminal.punctuator)
+                << "')";
+      break;
+    case Symbol::Type::KEYWORD:
+      std::cout << "K('" << KeywordHandler::toString(s.terminal.keyword)
+                << "')";
       break;
     case Symbol::Type::LITERAL:
       std::cout << "L(" << static_cast<int>(s.terminal.ident_or_lit) << ")";
@@ -112,4 +117,92 @@ void testParser(const std::string& input, const std::string& testName) {
   // Parser parser = Parser(stream);
   // parser.parse();
   std::cout << "--------------------------------\n";
+}
+
+void testActionTableGeneration() {
+  std::cout << "Testing Action Table Generation\n";
+
+  // Define Symbols
+  Symbol CONSTANT;
+  CONSTANT.type = Symbol::Type::LITERAL;
+  CONSTANT.terminal.ident_or_lit = 1;
+
+  Symbol PLUS;
+  PLUS.type = Symbol::Type::PUNCTUATOR;
+  PLUS.terminal.punctuator = Punctuator::PLUS;
+
+  Symbol STAR;
+  STAR.type = Symbol::Type::PUNCTUATOR;
+  STAR.terminal.punctuator = Punctuator::STAR;
+
+  Symbol LPAREN;
+  LPAREN.type = Symbol::Type::PUNCTUATOR;
+  LPAREN.terminal.punctuator = Punctuator::LPAREN;
+
+  Symbol RPAREN;
+  RPAREN.type = Symbol::Type::PUNCTUATOR;
+  RPAREN.terminal.punctuator = Punctuator::RPAREN;
+
+  Symbol EXPR;
+  EXPR.type = Symbol::Type::NON_TERMINAL;
+  EXPR.nonterminal = NonTerminal::Expr;
+
+  Symbol TERM;
+  TERM.type = Symbol::Type::NON_TERMINAL;
+  TERM.nonterminal = NonTerminal::Term;
+
+  Symbol FACT;
+  FACT.type = Symbol::Type::NON_TERMINAL;
+  FACT.nonterminal = NonTerminal::Factor;
+
+  // Define Grammar
+  Grammar grammar;
+  grammar.push_back({NonTerminal::Expr, {EXPR, PLUS, TERM}});
+  grammar.push_back({NonTerminal::Expr, {TERM}});
+  grammar.push_back({NonTerminal::Term, {TERM, STAR, FACT}});
+  grammar.push_back({NonTerminal::Term, {FACT}});
+  grammar.push_back({NonTerminal::Factor, {LPAREN, EXPR, RPAREN}});
+  grammar.push_back({NonTerminal::Factor, {CONSTANT}});
+
+  // Build the Action Table
+  ActionTableBuilder builder = ActionTableBuilder(grammar);
+
+  // Generate States using buildStates() or other means
+  ActionTableBuilder::Table transitions;
+  std::vector<ActionTableBuilder::ItemSet> states;
+  builder.buildStates(states, transitions);
+
+  // Now build the Action Table using the states and transitions
+  builder.buildTables(states, transitions);
+
+  // Print out the actions for each state and symbol in the table
+  for (const auto& entry : builder.action_table) {
+    const auto& key = entry.first;
+    const auto& action = entry.second;
+
+    std::cout << "State " << key.first << ", Symbol ";
+    print_symbol(key.second);
+    std::cout << " --> Action: ";
+
+    if (action.type == ActionTableBuilder::Action::Type::SHIFT) {
+      std::cout << "SHIFT, Next State: " << action.next_state << std::endl;
+    } else if (action.type == ActionTableBuilder::Action::Type::REDUCE) {
+      std::cout << "REDUCE, Rule Index: " << action.rule_index << std::endl;
+    } else if (action.type == ActionTableBuilder::Action::Type::ACCEPT) {
+      std::cout << "ACCEPT" << std::endl;
+    }
+  }
+
+  // You can also verify if the action table is correct by checking specific
+  // states or transitions. Example: check that State 0 on 'Expr' symbol gives a
+  // SHIFT to state 1
+  auto shift_action = builder.action_table.find({0, EXPR});
+  if (shift_action != builder.action_table.end()) {
+    const auto& action = shift_action->second;
+    if (action.type == ActionTableBuilder::Action::Type::SHIFT) {
+      assert(action.next_state == 1);  // Example expectation
+    }
+  }
+
+  std::cout << "Action Table Test Finished\n";
 }
