@@ -26,7 +26,9 @@ int main() {
   // )",
   //            "PARSER TEST");
 
-  testActionTableGeneration();
+  // testActionTableGeneration();
+
+  testActionTable();
 
   std::cout << "All tests passed!\n";
   return 0;

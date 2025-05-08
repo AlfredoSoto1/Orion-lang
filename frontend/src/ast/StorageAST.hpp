@@ -209,9 +209,9 @@ namespace compiler {
    *
    */
   union Terminal {
-    Keyword keyword;        // Keyword
-    Punctuator punctuator;  // Punctuator
-    uint8_t ident_or_lit;   // Identifier or literal
+    Keyword keyword;             // Keyword
+    Punctuator punctuator;       // Punctuator
+    uint8_t ident_or_lit_endof;  // Identifier or literal or ENDOF
   };
 
   /**
@@ -336,7 +336,8 @@ namespace compiler {
         case Symbol::Type::IDENTIFIER:
         case Symbol::Type::PUNCTUATOR:
         case Symbol::Type::LITERAL:
-          return this->terminal.ident_or_lit == b.terminal.ident_or_lit;
+          return this->terminal.ident_or_lit_endof ==
+                 b.terminal.ident_or_lit_endof;
 
         case Symbol::Type::ENDOF:
         case Symbol::Type::UNKNOWN:
@@ -394,7 +395,7 @@ namespace compiler {
         case Symbol::Type::PUNCTUATOR:
         case Symbol::Type::IDENTIFIER:
         case Symbol::Type::LITERAL:
-          h ^= std::hash<uint8_t>{}(s.terminal.ident_or_lit) << 1;
+          h ^= std::hash<uint8_t>{}(s.terminal.ident_or_lit_endof) << 1;
           break;
         default:
           break;
@@ -413,7 +414,7 @@ namespace compiler {
         case Symbol::Type::PUNCTUATOR:
         case Symbol::Type::IDENTIFIER:
         case Symbol::Type::LITERAL:
-          return a.terminal.ident_or_lit == b.terminal.ident_or_lit;
+          return a.terminal.ident_or_lit_endof == b.terminal.ident_or_lit_endof;
         default:
           return true;
       }

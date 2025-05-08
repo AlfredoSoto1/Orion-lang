@@ -206,7 +206,7 @@ namespace compiler {
         break;
       case TokenType::IDENTIFIER:
         sym.type = Symbol::Type::IDENTIFIER;
-        sym.terminal.ident_or_lit = 0;
+        sym.terminal.ident_or_lit_endof = 0;
         break;
       case TokenType::CHAR_LITERAL:
       case TokenType::BOOL_LITERAL:
@@ -223,7 +223,7 @@ namespace compiler {
       case TokenType::FLOAT32_LITERAL:
       case TokenType::FLOAT64_LITERAL:
         sym.type = Symbol::Type::LITERAL;
-        sym.terminal.ident_or_lit = 1;
+        sym.terminal.ident_or_lit_endof = 1;
         break;
       case TokenType::ENDOF:
         sym.type = Symbol::Type::ENDOF;

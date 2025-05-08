@@ -8,12 +8,13 @@ namespace compiler {
       : grammar(grammar) {}
 
   void ActionTableBuilder::build() {
-    //
-    // Table transitions;
-    // std::vector<ItemSet> states;
+    // Create a local table and a list of tiemsets
+    Table transitions;
+    std::vector<ItemSet> states;
 
-    // buildStates(states, transitions);
-    // buildTables();
+    // Build the action table
+    buildStates(states, transitions);
+    buildTables(states, transitions);
   }
 
   ActionTableBuilder::ItemSet ActionTableBuilder::closure(
@@ -151,42 +152,50 @@ namespace compiler {
         const RuleN& rule = grammar[item.rule_index];
 
         // Dot at the end → REDUCE or ACCEPT
-        if (item.dot_position == rule.rhs.size()) {
-          Symbol eof;
-          eof.type = Symbol::Type::ENDOF;
-
-          if (item.rule_index == 0) {
-            // S' → S . => ACCEPT
-            action_table[{state_id, eof}] = Action{Action::Type::ACCEPT};
-          } else {
-            // A → α . => REDUCE by rule_index on any terminal
-            for (uint8_t t = 0; t <= (uint8_t)Symbol::Type::ENDOF; ++t) {
-              Symbol sym;
-              sym.type = (Symbol::Type)t;
-
-              // Only reduce on terminals (not non-terminals)
-              if (sym.type == Symbol::Type::NON_TERMINAL ||
-                  sym.type == Symbol::Type::UNKNOWN)
-                continue;
-
-              Action action{};
-              action.type = Action::Type::REDUCE;
-              action.rule_index = item.rule_index;
-              action_table[{state_id, sym}] = action;
-            }
-          }
-        } else {
+        if (item.dot_position < rule.rhs.size()) {
           // Dot not at the end → SHIFT
           Symbol next_symbol = *(rule.rhs.begin() + item.dot_position);
 
           // Check if a transition on this symbol exists
           auto it = transitions.find({state_id, next_symbol});
-          if (it != transitions.end()) {
-            Action action{};
-            action.type = Action::Type::SHIFT;
-            action.next_state = it->second;
-            action_table[{state_id, next_symbol}] = action;
+          if (it == transitions.end()) {
+            continue;
           }
+
+          // Add SHIFT action to table
+          Action action{};
+          action.type = Action::Type::SHIFT;
+          action.next_state = it->second;
+          action_table[{state_id, next_symbol}] = action;
+          continue;
+        }
+
+        // S' → S . => ACCEPT
+        if (item.rule_index == 0) {
+          Symbol eof;
+          eof.type = Symbol::Type::ENDOF;
+          eof.terminal.ident_or_lit_endof = 2;
+          action_table[{state_id, eof}] = Action{Action::Type::ACCEPT};
+
+          continue;
+        }
+
+        // A → α . => REDUCE by rule_index on any terminal
+        for (uint8_t t = 0; t <= (uint8_t)Symbol::Type::ENDOF; ++t) {
+          Symbol sym;
+          sym.type = (Symbol::Type)t;
+
+          // Only reduce on terminals (not non-terminals)
+          if (sym.type == Symbol::Type::NON_TERMINAL ||
+              sym.type == Symbol::Type::UNKNOWN) {
+            continue;
+          }
+
+          // Add REDUCE action to table
+          Action action{};
+          action.type = Action::Type::REDUCE;
+          action.rule_index = item.rule_index;
+          action_table[{state_id, sym}] = action;
         }
       }
     }

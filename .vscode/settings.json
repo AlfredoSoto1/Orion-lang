@@ -1,8 +1,8 @@
 {
   "files.associations": {
+    "*.dbclient-js": "javascript",
     "*.sqlbook": "sql",
     "*.ndjson": "jsonl",
-    "*.dbclient-js": "javascript",
     "cctype": "cpp",
     "unordered_set": "cpp",
     "variant": "cpp",
@@ -78,6 +78,8 @@
     "set": "cpp",
     "xtree": "cpp",
     "queue": "cpp",
-    "map": "cpp"
+    "map": "cpp",
+    "iomanip": "cpp",
+    "sstream": "cpp"
   }
 }
