@@ -1,13 +1,15 @@
-#include "ActionTableBuilder.hpp"
+#include "ActionTable.hpp"
 
 #include <iostream>
+#include <queue>
 #include <stack>
 
 namespace compiler {
-  ActionTableBuilder::ActionTableBuilder(const Grammar& grammar) noexcept
+
+  ActionTable::ActionTable(const Grammar& grammar) noexcept
       : grammar(grammar) {}
 
-  void ActionTableBuilder::build() {
+  void ActionTable::build() {
     // Create a local table and a list of tiemsets
     Table transitions;
     std::vector<ItemSet> states;
@@ -17,9 +19,7 @@ namespace compiler {
     buildTables(states, transitions);
   }
 
-  ActionTableBuilder::ItemSet ActionTableBuilder::closure(
-      const ItemSet& items) {
-    // Prepare item set result and stop condition flag
+  ActionTable::ItemSet ActionTable::closure(const ItemSet& items) {
     bool changed = true;
     ItemSet result = items;
 
@@ -29,7 +29,7 @@ namespace compiler {
 
       // For every item obtain the rule associated
       for (const auto& item : result) {
-        const RuleN& rule = grammar[item.rule_index];
+        const Rule& rule = grammar[item.rule_index];
 
         // Make sure the position hasnt reached the end of the rule
         if (item.dot_position >= rule.rhs.size()) {
@@ -71,12 +71,12 @@ namespace compiler {
     return result;
   }
 
-  ActionTableBuilder::ItemSet ActionTableBuilder::goTo(const ItemSet& items,
-                                                       const Symbol& symbol) {
+  ActionTable::ItemSet ActionTable::goTo(const ItemSet& items,
+                                         const Symbol& symbol) {
     ItemSet moved;
 
     for (const auto& item : items) {
-      const RuleN& rule = grammar[item.rule_index];
+      const Rule& rule = grammar[item.rule_index];
 
       // Skip if dot is at the end
       if (item.dot_position >= rule.rhs.size()) continue;
@@ -96,13 +96,13 @@ namespace compiler {
     return closure(moved);
   }
 
-  void ActionTableBuilder::buildStates(std::vector<ItemSet>& states,
-                                       Table& transitions) {
+  void ActionTable::buildStates(std::vector<ItemSet>& states,
+                                Table& transitions) {
     // Augmented start rule: assume rule 0 is S' → S
     ItemSet start_set = closure({Item{0, 0}});
     states.push_back(start_set);
 
-    std::queue<size_t> worklist;
+    std::queue<State> worklist;
     worklist.push(0);
 
     while (!worklist.empty()) {
@@ -142,14 +142,14 @@ namespace compiler {
     }
   }
 
-  void ActionTableBuilder::buildTables(std::vector<ItemSet>& states,
-                                       Table& transitions) {
+  void ActionTable::buildTables(std::vector<ItemSet>& states,
+                                Table& transitions) {
     for (size_t state_id = 0; state_id < states.size(); ++state_id) {
       const ItemSet& item_set = states[state_id];
 
       // Process all items in the current state
       for (const Item& item : item_set) {
-        const RuleN& rule = grammar[item.rule_index];
+        const Rule& rule = grammar[item.rule_index];
 
         // Dot at the end → REDUCE or ACCEPT
         if (item.dot_position < rule.rhs.size()) {
@@ -173,15 +173,15 @@ namespace compiler {
         // S' → S . => ACCEPT
         if (item.rule_index == 0) {
           Symbol eof;
-          eof.type = Symbol::Type::ENDOF;
-          eof.terminal.ident_or_lit_endof = 2;
+          eof.type = Symbol::Type::EOF_TERMINAL;
+          eof.terminal.eof = 2;
           action_table[{state_id, eof}] = Action{Action::Type::ACCEPT};
 
           continue;
         }
 
         // A → α . => REDUCE by rule_index on any terminal
-        for (uint8_t t = 0; t <= (uint8_t)Symbol::Type::ENDOF; ++t) {
+        for (uint8_t t = 0; t <= (uint8_t)Symbol::Type::COUNT; ++t) {
           Symbol sym;
           sym.type = (Symbol::Type)t;
 

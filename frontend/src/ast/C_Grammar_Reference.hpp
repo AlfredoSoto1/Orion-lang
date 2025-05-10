@@ -2,7 +2,7 @@
 
 namespace compiler {
 
-  enum class Rule {
+  enum class Rule_old {
     UNKNOWN = 0,
 
     // Program → decl Program
