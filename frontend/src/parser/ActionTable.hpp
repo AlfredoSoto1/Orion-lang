@@ -59,6 +59,10 @@ namespace compiler {
    */
   class ActionTable final {
   public:
+    using State = size_t;
+    using StateSymbol = std::pair<State, Symbol>;
+
+  public:
     explicit ActionTable(const Grammar& grammar) noexcept;
 
     /**
@@ -67,10 +71,26 @@ namespace compiler {
      */
     void build();
 
+    /**
+     * @brief Returns the corresponding action from a state symbol.
+     *
+     * @param state_symbol
+     * @return Action
+     */
+    Action actionFrom(StateSymbol&& state_symbol);
+
+    /**
+     * @brief Returns the corresponding state from a state symbol.
+     *
+     * @param state_symbol
+     * @return State
+     */
+    State stateFrom(StateSymbol&& state_symbol);
+
   private:
     const Grammar& grammar;
 
-  public:
+  private:
     struct Item {
       size_t rule_index;
       size_t dot_position;
@@ -87,12 +107,10 @@ namespace compiler {
       size_t operator()(const ItemSet& set) const;
     };
 
-  public:
-    using State = size_t;
+  private:
     using SymbolSet = std::unordered_set<Symbol, SymbolHash>;
     using ItemSetState = std::unordered_map<ItemSet, State, ItemSetHasher>;
 
-    using StateSymbol = std::pair<State, Symbol>;
     using Table = std::unordered_map<StateSymbol, State, StateSymbolHash>;
     using ATable = std::unordered_map<StateSymbol, Action, StateSymbolHash>;
     using GTable = std::unordered_map<StateSymbol, State, StateSymbolHash>;
@@ -101,8 +119,9 @@ namespace compiler {
     ATable action_table;
     SymbolSet terminals;
 
-    Table transitions;
-    std::vector<ItemSet> states;
+    // // Just for testing, can be removed once everything works
+    // Table transitions;
+    // std::vector<ItemSet> states;
 
   private:
     void obtainAllTerminals();

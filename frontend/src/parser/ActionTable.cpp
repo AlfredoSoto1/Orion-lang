@@ -29,9 +29,24 @@ namespace compiler {
   }
 
   void ActionTable::build() {
+    // Stack allocate the table transitions and item-set states.
+    // This is just a one time creation, meaning that there is no need
+    // to keep a reference alive after build method returns. Unless
+    // its for debugging.
+    Table transitions;
+    std::vector<ItemSet> states;
+
     // Build the action table
     buildStates(states, transitions);
     buildTables(states, transitions);
+  }
+
+  Action ActionTable::actionFrom(StateSymbol&& state_symbol) {
+    return action_table[state_symbol];
+  }
+
+  ActionTable::State ActionTable::stateFrom(StateSymbol&& state_symbol) {
+    return goto_table[state_symbol];
   }
 
   void ActionTable::obtainAllTerminals() {
