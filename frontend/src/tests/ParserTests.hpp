@@ -233,7 +233,7 @@ bool runTest(ActionTable& table, Grammar& grammar,
     if (it == table.action_table.end()) {
       std::cout << "Error at state " << s << ", symbol " << print_symbol(a)
                 << "\n";
-      return false;
+      return shouldAccept == false;
     }
     Action act = it->second;
     if (act.type == Action::SHIFT) {
@@ -254,94 +254,16 @@ bool runTest(ActionTable& table, Grammar& grammar,
   }
 }
 
-void testActionTableGeneration() {
-  std::cout << "Testing Action Table Generation\n";
-
-  // Define Symbols
-  Symbol ID;
-  ID.type = Symbol::Type::ID_TERMINAL;
-  ID.terminal.literal = 0;
-
-  Symbol CONSTANT;
-  CONSTANT.type = Symbol::Type::LIT_TERMINAL;
-  CONSTANT.terminal.literal = 1;
-
-  Symbol PLUS;
-  PLUS.type = Symbol::Type::PUN_TERMINAL;
-  PLUS.terminal.punctuator = Punctuator::PLUS;
-
-  Symbol STAR;
-  STAR.type = Symbol::Type::PUN_TERMINAL;
-  STAR.terminal.punctuator = Punctuator::STAR;
-
-  Symbol LPAREN;
-  LPAREN.type = Symbol::Type::PUN_TERMINAL;
-  LPAREN.terminal.punctuator = Punctuator::LPAREN;
-
-  Symbol RPAREN;
-  RPAREN.type = Symbol::Type::PUN_TERMINAL;
-  RPAREN.terminal.punctuator = Punctuator::RPAREN;
-
-  Symbol EXPR;
-  EXPR.type = Symbol::Type::NON_TERMINAL;
-  EXPR.nonterminal = NonTerminal::EXPR;
-
-  Symbol TERM;
-  TERM.type = Symbol::Type::NON_TERMINAL;
-  TERM.nonterminal = NonTerminal::TERM;
-
-  Symbol FACT;
-  FACT.type = Symbol::Type::NON_TERMINAL;
-  FACT.nonterminal = NonTerminal::FACT;
-
-  // Define Grammar
-  Grammar grammar;
-  grammar.push_back({NonTerminal::EXPR, {EXPR, PLUS, TERM}});
-  grammar.push_back({NonTerminal::EXPR, {TERM}});
-  grammar.push_back({NonTerminal::TERM, {TERM, STAR, FACT}});
-  grammar.push_back({NonTerminal::TERM, {FACT}});
-  grammar.push_back({NonTerminal::FACT, {LPAREN, EXPR, RPAREN}});
-  grammar.push_back({NonTerminal::FACT, {CONSTANT}});
-
-  // grammar.push_back({NonTerminal::EXPR, {EXPR, PLUS, TERM}});
-  // grammar.push_back({NonTerminal::EXPR, {EXPR, STAR, TERM}});
-  // grammar.push_back({NonTerminal::EXPR, {TERM}});
-  // grammar.push_back({NonTerminal::TERM, {CONSTANT}});
-  // grammar.push_back({NonTerminal::TERM, {ID}});
-
-  // Build the Action Table
-  ActionTable builder = ActionTable(grammar);
-
-  // Generate States using buildStates() or other means
-  builder.build();
-  printItemSets(builder.states, grammar);
-  printPrettyActionAndGotoTables(builder, builder.states);
-
-  assert(runTest(builder, grammar, {CONSTANT, PLUS, CONSTANT, STAR, CONSTANT},
-                 true));  // 1+2*3
-  assert(runTest(builder, grammar,
-                 {LPAREN, CONSTANT, PLUS, CONSTANT, RPAREN, STAR, CONSTANT},
-                 true));
-  assert(runTest(builder, grammar,
-                 {CONSTANT, PLUS, LPAREN, CONSTANT, STAR, CONSTANT},
-                 false));  // bad
-
-  // You can also verify if the action table is correct by checking specific
-  // states or transitions. Example: check that State 0 on 'Expr' symbol gives a
-  // SHIFT to state 1
-  auto shift_action = builder.action_table.find({0, EXPR});
-  if (shift_action != builder.action_table.end()) {
-    const auto& action = shift_action->second;
-    if (action.type == Action::Type::SHIFT) {
-      assert(action.next_state == 1);  // Example expectation
-    }
-  }
-
-  std::cout << "Action Table Test Finished\n";
-}
-
 void testActionTable() {
   // Define Symbols
+  Symbol START;
+  START.type = Symbol::Type::NON_TERMINAL;
+  START.nonterminal = NonTerminal::START;
+
+  Symbol ENDOF;
+  ENDOF.type = Symbol::Type::EOF_TERMINAL;
+  ENDOF.terminal.eof = 2;
+
   Symbol ID;
   ID.type = Symbol::Type::ID_TERMINAL;
   ID.terminal.literal = 0;
@@ -380,22 +302,24 @@ void testActionTable() {
 
   // Define Grammar
   Grammar grammar;
+  grammar.push_back({NonTerminal::START, {EXPR}});
   grammar.push_back({NonTerminal::EXPR, {EXPR, PLUS, TERM}});
   grammar.push_back({NonTerminal::EXPR, {TERM}});
   grammar.push_back({NonTerminal::TERM, {TERM, STAR, FACT}});
   grammar.push_back({NonTerminal::TERM, {FACT}});
   grammar.push_back({NonTerminal::FACT, {LPAREN, EXPR, RPAREN}});
   grammar.push_back({NonTerminal::FACT, {CONSTANT}});
-
-  // grammar.push_back({NonTerminal::EXPR, {EXPR, PLUS, TERM}});
-  // grammar.push_back({NonTerminal::EXPR, {EXPR, STAR, TERM}});
-  // grammar.push_back({NonTerminal::EXPR, {TERM}});
-  // grammar.push_back({NonTerminal::TERM, {CONSTANT}});
-  // grammar.push_back({NonTerminal::TERM, {ID}});
 
   // Build action table
   ActionTable builder(grammar);
   builder.build();
+
+  /**
+   *
+   *
+   *
+   *
+   */
 
   // Pretty print action table
   std::cout << std::left << std::setw(8) << "State" << std::setw(20) << "Symbol"
@@ -457,4 +381,50 @@ void testActionTable() {
               << symbol_str << std::setw(10) << action_str << std::setw(10)
               << value_str << "\n";
   }
+
+  /**
+   *
+   *
+   *
+   *
+   */
+
+  printItemSets(builder.states, grammar);
+  printPrettyActionAndGotoTables(builder, builder.states);
+
+  // 1+2*3
+  assert(runTest(builder, grammar,
+                 {
+                     CONSTANT,
+                     PLUS,
+                     CONSTANT,
+                     STAR,
+                     CONSTANT,
+                 },
+                 true));
+
+  // (1 + 2) * 3
+  assert(runTest(builder, grammar,
+                 {
+                     LPAREN,
+                     CONSTANT,
+                     PLUS,
+                     CONSTANT,
+                     RPAREN,
+                     STAR,
+                     CONSTANT,
+                 },
+                 true));
+
+  // 1 + (2 * 3
+  assert(runTest(builder, grammar,
+                 {
+                     CONSTANT,
+                     PLUS,
+                     LPAREN,
+                     CONSTANT,
+                     STAR,
+                     CONSTANT,
+                 },
+                 false));
 }

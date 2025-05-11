@@ -6,14 +6,29 @@
 
 namespace compiler {
 
+  bool ActionTable::Item::operator==(const Item& other) const {
+    return rule_index == other.rule_index && dot_position == other.dot_position;
+  }
+
+  size_t ActionTable::ItemHasher::operator()(const Item& item) const {
+    return std::hash<size_t>()(item.rule_index) ^
+           (std::hash<size_t>()(item.dot_position) << 1);
+  }
+
+  size_t ActionTable::ItemSetHasher::operator()(const ItemSet& set) const {
+    size_t hash = set.size();
+    for (const Item& element : set) {
+      hash ^= ItemHasher{}(element);
+    }
+    return hash;
+  }
+
   ActionTable::ActionTable(const Grammar& grammar) noexcept
       : grammar(grammar), terminals() {
     obtainAllTerminals();
   }
 
   void ActionTable::build() {
-    // Create a local table and a list of tiemsets
-
     // Build the action table
     buildStates(states, transitions);
     buildTables(states, transitions);
@@ -28,7 +43,6 @@ namespace compiler {
       }
     }
 
-    // Completely optional. Only add the EOF_TERMINAL for consistency
     Symbol end_sym;
     end_sym.type = Symbol::Type::EOF_TERMINAL;
     end_sym.terminal.eof = 2;

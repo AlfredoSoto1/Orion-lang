@@ -10,22 +10,27 @@
 namespace compiler {
 
   /**
-   * @brief Represents a non-terminal symbol in the RHS of the grammar rule.
-   *        This let know the parsing machine to keep moving between states.
+   * @brief Represents a non-terminal symbol in the RHS of a grammar rule.
    *
+   *        These are used during parsing to identify abstract syntactic
+   *        categories like expressions, terms, or factors. They help the parser
+   *        decide how to transition between states in the parsing automaton.
    */
   enum class NonTerminal : uint8_t {
     UNKNOWN = 0,
 
-    // Expr    → Expr + Term
-    //     | Term
+    // START → EXPR
 
-    // Term    → Term * Factor
-    //         | Factor
+    // EXPR → EXPR + TERM
+    //      | TERM
 
-    // Factor  → ( Expr )
-    //         | number
+    // TERM → TERM * FACT
+    //      | FACT
 
+    // FACT → ( EXPR )
+    //      | number
+
+    START,
     EXPR,
     TERM,
     FACT,
@@ -101,10 +106,11 @@ namespace compiler {
   };
 
   /**
-   * @brief Represents a terminal symbol in the RHS of the grammar.
-   *        This is a compact version of a token. This is just used to represent
-   *        that a token is a terminal but with less information.
+   * @brief Represents a terminal symbol, which is a compact form of a token.
    *
+   *        This is used for grammar rule definitions and comparisons during
+   *        parsing. It abstracts tokens like keywords, identifiers, literals,
+   *        punctuators, and the end-of-file marker.
    */
   union Terminal {
     uint8_t eof;            // End of file
@@ -115,9 +121,12 @@ namespace compiler {
   };
 
   /**
-   * @brief Unit representation of a symbol. It can either be a terminal or a
+   * @brief Represents a grammar symbol, which can be a terminal or
    *        non-terminal.
    *
+   *        This is used in the right-hand side of grammar rules and within
+   *        parsing states. The `type` field indicates whether the symbol is a
+   *        terminal or non-terminal. The union holds the corresponding value.
    */
   struct Symbol {
     enum class Type : uint8_t {
@@ -145,8 +154,10 @@ namespace compiler {
   };
 
   /**
-   * @brief
+   * @brief Represents a single production rule in a context-free grammar.
    *
+   *        Each rule has a left-hand side (a non-terminal) and a right-hand
+   *        side, which is a sequence of symbols (terminals or non-terminals).
    */
   struct Rule {
     NonTerminal lhs;
@@ -154,13 +165,13 @@ namespace compiler {
   };
 
   /**
-   * @brief
+   * @brief A collection of grammar rules representing a full grammar.
    *
    */
   using Grammar = std::vector<Rule>;
 
   /**
-   * @brief
+   * @brief Hash function for Symbol, allowing use in hash-based containers.
    *
    */
   struct SymbolHash {
@@ -171,8 +182,10 @@ namespace compiler {
   };
 
   /**
-   * @brief
+   * @brief Hash function for a (state, symbol) pair.
    *
+   *        Useful for indexing transitions in parsing tables like ACTION or
+   *        GOTO.
    */
   struct StateSymbolHash {
     std::size_t operator()(const std::pair<size_t, Symbol>& p) const {

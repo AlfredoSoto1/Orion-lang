@@ -18,15 +18,39 @@ namespace compiler {
       uint32_t next_state;
     };
 
+    /**
+     * @brief Prepares a reduce action
+     *
+     * @param rule_index
+     * @return Action
+     */
     static Action reduce(uint32_t rule_index) {
       return Action{.type = REDUCE, .rule_index = rule_index};
     }
 
+    /**
+     * @brief Prepares a shift action
+     *
+     * @param next_state
+     * @return Action
+     */
     static Action shift(uint32_t next_state) {
       return Action{.type = SHIFT, .next_state = next_state};
     }
 
+    /**
+     * @brief Prepares an accept action
+     *
+     * @return Action
+     */
     static Action accept() { return Action{.type = ACCEPT}; }
+
+    /**
+     * @brief Prepares an error action
+     *
+     * @return Action
+     */
+    static Action error() { return Action{.type = ERROR}; }
   };
 
   /**
@@ -43,54 +67,28 @@ namespace compiler {
      */
     void build();
 
-    /**
-     * @brief
-     *
-     */
-    void from();
+  private:
+    const Grammar& grammar;
 
   public:
-    /**
-     * @brief
-     *
-     */
     struct Item {
       size_t rule_index;
       size_t dot_position;
-
-      bool operator==(const Item& other) const {
-        return rule_index == other.rule_index &&
-               dot_position == other.dot_position;
-      }
+      bool operator==(const Item& other) const;
     };
 
-    /**
-     * @brief
-     *
-     */
     struct ItemHasher {
-      size_t operator()(const Item& item) const {
-        return std::hash<size_t>()(item.rule_index) ^
-               (std::hash<size_t>()(item.dot_position) << 1);
-      }
+      size_t operator()(const Item& item) const;
     };
 
-  public:
-    const Grammar& grammar;
-
-    using State = size_t;
     using ItemSet = std::unordered_set<Item, ItemHasher>;
 
     struct ItemSetHasher {
-      size_t operator()(const ItemSet& set) const {
-        size_t hash = set.size();
-        for (const Item& element : set) {
-          hash ^= ItemHasher{}(element);
-        }
-        return hash;
-      }
+      size_t operator()(const ItemSet& set) const;
     };
 
+  public:
+    using State = size_t;
     using SymbolSet = std::unordered_set<Symbol, SymbolHash>;
     using ItemSetState = std::unordered_map<ItemSet, State, ItemSetHasher>;
 
@@ -106,11 +104,11 @@ namespace compiler {
     Table transitions;
     std::vector<ItemSet> states;
 
-  public:
+  private:
+    void obtainAllTerminals();
+
     ItemSet closure(const ItemSet& items);
     ItemSet goTo(const ItemSet& items, const Symbol& symbol);
-
-    void obtainAllTerminals();
 
     void buildStates(std::vector<ItemSet>& states, Table& transitions);
     void buildTables(std::vector<ItemSet>& states, Table& transitions);
