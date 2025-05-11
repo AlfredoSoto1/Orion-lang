@@ -7,16 +7,32 @@
 namespace compiler {
 
   ActionTable::ActionTable(const Grammar& grammar) noexcept
-      : grammar(grammar) {}
+      : grammar(grammar), terminals() {
+    obtainAllTerminals();
+  }
 
   void ActionTable::build() {
     // Create a local table and a list of tiemsets
-    Table transitions;
-    std::vector<ItemSet> states;
 
     // Build the action table
     buildStates(states, transitions);
     buildTables(states, transitions);
+  }
+
+  void ActionTable::obtainAllTerminals() {
+    for (const auto& rule : grammar) {
+      for (const auto& sym : rule.rhs) {
+        if (sym.type != Symbol::Type::NON_TERMINAL) {
+          terminals.insert(sym);
+        }
+      }
+    }
+
+    // Completely optional. Only add the EOF_TERMINAL for consistency
+    Symbol end_sym;
+    end_sym.type = Symbol::Type::EOF_TERMINAL;
+    end_sym.terminal.eof = 2;
+    terminals.insert(end_sym);
   }
 
   ActionTable::ItemSet ActionTable::closure(const ItemSet& items) {
@@ -41,7 +57,7 @@ namespace compiler {
         std::advance(it, item.dot_position);
         const Symbol& sym = *it;
 
-        // If its a terminal, continue
+        // If its a terminal, skip operation
         if (sym.type != Symbol::Type::NON_TERMINAL) {
           continue;
         }
@@ -81,13 +97,13 @@ namespace compiler {
       // Skip if dot is at the end
       if (item.dot_position >= rule.rhs.size()) continue;
 
-      // Get symbol at the dot position
+      // Get symbol at the current dot position
       auto it = rule.rhs.begin();
       std::advance(it, item.dot_position);
-      const Symbol& current = *it;
+      const Symbol& curr_sym = *it;
 
       // If it matches the input symbol, move the dot forward
-      if (current == symbol) {
+      if (curr_sym == symbol) {
         moved.insert({item.rule_index, item.dot_position + 1});
       }
     }
@@ -99,106 +115,97 @@ namespace compiler {
   void ActionTable::buildStates(std::vector<ItemSet>& states,
                                 Table& transitions) {
     // Augmented start rule: assume rule 0 is S' → S
-    ItemSet start_set = closure({Item{0, 0}});
-    states.push_back(start_set);
+    states.push_back(closure({Item{0, 0}}));
+
+    ItemSetState itemset_to_state;
+    itemset_to_state[states[0]] = 0;
 
     std::queue<State> worklist;
     worklist.push(0);
 
     while (!worklist.empty()) {
-      size_t current_state = worklist.front();
+      State current_state = worklist.front();
       worklist.pop();
 
-      const ItemSet& items = states[current_state];
-      std::unordered_map<Symbol, ItemSet, SymbolHash> symbol_to_itemset;
+      ItemSet state_items = states[current_state];
 
-      // Compute GOTO(I, X) for every symbol after dot in each item
-      for (const auto& item : items) {
-        const auto& rule = grammar[item.rule_index];
-        if (item.dot_position >= rule.rhs.size()) continue;
-
-        Symbol next_symbol = *(rule.rhs.begin() + item.dot_position);
-        Item next_item{item.rule_index, item.dot_position + 1};
-        symbol_to_itemset[next_symbol].insert(next_item);
+      // Collect all symbols that appear just after a dot
+      SymbolSet next_symbols;
+      for (const Item& item : state_items) {
+        const Rule& rule = grammar[item.rule_index];
+        if (item.dot_position < rule.rhs.size()) {
+          // Get symbol at the current dot position
+          auto it = rule.rhs.begin();
+          std::advance(it, item.dot_position);
+          next_symbols.insert(*it);
+        }
       }
 
-      for (const auto& [symbol, raw_items] : symbol_to_itemset) {
-        ItemSet next_closure = closure(raw_items);
+      for (const Symbol& sym : next_symbols) {
+        ItemSet next = goTo(state_items, sym);
+        if (next.empty()) continue;
 
-        // Check if already in states
-        auto it = std::find(states.begin(), states.end(), next_closure);
-        size_t next_state;
-
-        if (it == states.end()) {
-          next_state = states.size();
-          states.push_back(next_closure);
-          worklist.push(next_state);
+        State target_state;
+        auto it = itemset_to_state.find(next);
+        if (it != itemset_to_state.end()) {
+          target_state = it->second;
         } else {
-          next_state = std::distance(states.begin(), it);
+          target_state = states.size();
+          states.push_back(next);
+          itemset_to_state[next] = target_state;
+          worklist.push(target_state);
         }
 
-        transitions[{current_state, symbol}] = next_state;
+        transitions[{current_state, sym}] = target_state;
       }
     }
   }
 
   void ActionTable::buildTables(std::vector<ItemSet>& states,
                                 Table& transitions) {
-    for (size_t state_id = 0; state_id < states.size(); ++state_id) {
-      const ItemSet& item_set = states[state_id];
+    for (size_t state = 0; state < states.size(); ++state) {
+      const auto& items = states[state];
 
-      // Process all items in the current state
-      for (const Item& item : item_set) {
+      for (const Item& item : items) {
         const Rule& rule = grammar[item.rule_index];
 
-        // Dot at the end → REDUCE or ACCEPT
         if (item.dot_position < rule.rhs.size()) {
-          // Dot not at the end → SHIFT
-          Symbol next_symbol = *(rule.rhs.begin() + item.dot_position);
+          // Get symbol at the current dot position
+          auto it = rule.rhs.begin();
+          std::advance(it, item.dot_position);
 
-          // Check if a transition on this symbol exists
-          auto it = transitions.find({state_id, next_symbol});
-          if (it == transitions.end()) {
-            continue;
+          // Dot is not at end → try shift
+          Symbol sym = *it;
+          if (sym.type != Symbol::Type::NON_TERMINAL) {
+            auto it = transitions.find({state, sym});
+            if (it != transitions.end()) {
+              action_table[{state, sym}] = Action::shift(it->second);
+            }
           }
-
-          // Add SHIFT action to table
-          Action action{};
-          action.type = Action::Type::SHIFT;
-          action.next_state = it->second;
-          action_table[{state_id, next_symbol}] = action;
-          continue;
-        }
-
-        // S' → S . => ACCEPT
-        if (item.rule_index == 0) {
-          Symbol eof;
-          eof.type = Symbol::Type::EOF_TERMINAL;
-          eof.terminal.eof = 2;
-          action_table[{state_id, eof}] = Action{Action::Type::ACCEPT};
-
-          continue;
-        }
-
-        // A → α . => REDUCE by rule_index on any terminal
-        for (uint8_t t = 0; t <= (uint8_t)Symbol::Type::COUNT; ++t) {
-          Symbol sym;
-          sym.type = (Symbol::Type)t;
-
-          // Only reduce on terminals (not non-terminals)
-          if (sym.type == Symbol::Type::NON_TERMINAL ||
-              sym.type == Symbol::Type::UNKNOWN) {
-            continue;
+        } else {
+          // Dot at end → reduce or accept
+          if (item.rule_index == 0) {
+            // Accept on end-of-input symbol
+            Symbol end_sym;
+            end_sym.type = Symbol::Type::EOF_TERMINAL;
+            end_sym.terminal.eof = 2;
+            action_table[{state, end_sym}] = Action::accept();
+          } else {
+            // Reduce by this rule for all terminals
+            for (const Symbol& terminal : terminals) {
+              action_table[{state, terminal}] = Action::reduce(item.rule_index);
+            }
           }
+        }
+      }
 
-          // Add REDUCE action to table
-          Action action{};
-          action.type = Action::Type::REDUCE;
-          action.rule_index = item.rule_index;
-          action_table[{state_id, sym}] = action;
+      // Handle gotos for non-terminals
+      for (const auto& [key, target] : transitions) {
+        if (key.first == state &&
+            key.second.type == Symbol::Type::NON_TERMINAL) {
+          goto_table[{state, key.second}] = target;
         }
       }
     }
   }
-
 }  // namespace compiler

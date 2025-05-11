@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <string_view>
 
@@ -13,6 +14,62 @@
 #include "parser/Parser.hpp"
 
 using namespace compiler;
+
+//----------------------------------------------------------------
+// 1) Define the Symbols you'll use in your tests
+//----------------------------------------------------------------
+static const Symbol ID = [] {
+  Symbol s;
+  s.type = Symbol::Type::ID_TERMINAL;
+  s.terminal.literal = 0;
+  return s;
+}();
+
+static const Symbol CONSTANT = [] {
+  Symbol s;
+  s.type = Symbol::Type::LIT_TERMINAL;
+  s.terminal.literal = 1;
+  return s;
+}();
+
+static const Symbol PLUS = [] {
+  Symbol s;
+  s.type = Symbol::Type::PUN_TERMINAL;
+  s.terminal.punctuator = Punctuator::PLUS;
+  return s;
+}();
+
+static const Symbol STAR = [] {
+  Symbol s;
+  s.type = Symbol::Type::PUN_TERMINAL;
+  s.terminal.punctuator = Punctuator::STAR;
+  return s;
+}();
+
+static const Symbol LPAREN = [] {
+  Symbol s;
+  s.type = Symbol::Type::PUN_TERMINAL;
+  s.terminal.punctuator = Punctuator::LPAREN;
+  return s;
+}();
+
+static const Symbol RPAREN = [] {
+  Symbol s;
+  s.type = Symbol::Type::PUN_TERMINAL;
+  s.terminal.punctuator = Punctuator::RPAREN;
+  return s;
+}();
+
+// (you already have EXPR, TERM, FACT in your ActionTable construction,
+// so they’re not needed here for the token stream)
+
+// End-of-input marker:
+static const Symbol ENDOF = [] {
+  Symbol end_sym;
+  end_sym.type = Symbol::Type::EOF_TERMINAL;
+  end_sym.terminal.eof = 2;
+  return end_sym;
+}();
 
 std::string print_symbol(const Symbol& s) {
   std::ostringstream oss;
@@ -31,8 +88,11 @@ std::string print_symbol(const Symbol& s) {
     case Symbol::Type::LIT_TERMINAL:
       oss << "L(" << static_cast<int>(s.terminal.literal) << ")";
       break;
+    case Symbol::Type::ID_TERMINAL:
+      oss << "I(" << static_cast<int>(s.terminal.identifier) << ")";
+      break;
     default:
-      oss << "?";
+      oss << "ENDOF";
   }
 
   return oss.str();
@@ -50,6 +110,29 @@ void print_item(const Rule& rule, const ActionTable::Item& item) {
   std::cout << "\n";
 }
 
+void printItemSets(const std::vector<ActionTable::ItemSet>& states,
+                   const std::vector<Rule>& grammar) {
+  for (size_t i = 0; i < states.size(); ++i) {
+    std::cout << "State " << i << ":\n";
+    for (const auto& item : states[i]) {
+      const Rule& rule = grammar[item.rule_index];
+      std::cout << "  " << static_cast<uint32_t>(rule.lhs) << " ->";
+
+      size_t pos = 0;
+      for (const auto& sym : rule.rhs) {
+        if (pos == item.dot_position) std::cout << " .";
+        std::cout << " " << print_symbol(sym);
+        ++pos;
+      }
+
+      if (item.dot_position == rule.rhs.size()) std::cout << " .";
+
+      std::cout << "\n";
+    }
+    std::cout << "\n";
+  }
+}
+
 void printPrettyActionAndGotoTables(
     const ActionTable& builder,
     const std::vector<ActionTable::ItemSet>& states) {
@@ -59,20 +142,23 @@ void printPrettyActionAndGotoTables(
   // Collect terminal and non-terminal symbols
   for (const auto& [key, action] : builder.action_table) {
     const Symbol& symbol = key.second;
+    if (std::find(terminalSymbols.begin(), terminalSymbols.end(), symbol) ==
+        terminalSymbols.end())
+      terminalSymbols.push_back(symbol);
+  }
+
+  for (const auto& [key, state] : builder.goto_table) {
+    const Symbol& symbol = key.second;
     if (symbol.type == Symbol::Type::NON_TERMINAL) {
       if (std::find(nonTerminalSymbols.begin(), nonTerminalSymbols.end(),
                     symbol) == nonTerminalSymbols.end())
         nonTerminalSymbols.push_back(symbol);
-    } else {
-      if (std::find(terminalSymbols.begin(), terminalSymbols.end(), symbol) ==
-          terminalSymbols.end())
-        terminalSymbols.push_back(symbol);
     }
   }
 
   std::sort(terminalSymbols.begin(), terminalSymbols.end(),
             [](const Symbol& a, const Symbol& b) {
-              return (int)a.nonterminal < (int)b.nonterminal;
+              return (int)a.type < (int)b.type;
             });
   std::sort(nonTerminalSymbols.begin(), nonTerminalSymbols.end(),
             [](const Symbol& a, const Symbol& b) {
@@ -84,14 +170,10 @@ void printPrettyActionAndGotoTables(
   printf("%-10s|", "");
   for (const auto& sym : terminalSymbols) {
     printf(" %-6s |", print_symbol(sym).c_str());
-    // std::cout << " ";
-    // print_symbol(sym);
-    // std::cout << " |";
   }
   std::cout << "\n";
 
   for (size_t i = 0; i < states.size(); ++i) {
-    // std::cout << "State " << i << " |";
     printf("State %-3d |", i);
     for (const auto& sym : terminalSymbols) {
       auto it = builder.action_table.find({i, sym});
@@ -99,49 +181,87 @@ void printPrettyActionAndGotoTables(
         const auto& action = it->second;
         if (action.type == Action::Type::SHIFT) {
           printf(" s%-5d |", action.next_state);
-          // std::cout << " s" << action.next_state << " |";
         } else if (action.type == Action::Type::REDUCE) {
           printf(" r%-5d |", action.rule_index);
-          // std::cout << " r" << action.rule_index << " |";
         } else if (action.type == Action::Type::ACCEPT) {
           printf(" acc%-3s |", "");
-          // std::cout << " acc |";
         }
       } else {
         printf("  %5s |", "");
-        // std::cout << "     |";
       }
     }
     std::cout << "\n";
   }
 
-  // // === GOTO TABLE HEADER ===
-  // std::cout << "\n=== GOTO TABLE ===\n     |";
-  // for (const auto& sym : nonTerminalSymbols) {
-  //   std::cout << " ";
-  //   print_symbol(sym);
-  //   std::cout << " |";
-  // }
-  // std::cout << "\n";
+  // === GOTO TABLE HEADER ===
+  std::cout << "\n=== GOTO TABLE ===\n";
+  printf("%-10s|", "");
+  for (const auto& sym : nonTerminalSymbols) {
+    printf(" %-6s |", print_symbol(sym).c_str());
+  }
+  std::cout << "\n";
 
-  // for (size_t i = 0; i < states.size(); ++i) {
-  //   std::cout << "State " << i << " |";
-  //   for (const auto& sym : nonTerminalSymbols) {
-  //     auto it = builder.goto_table.find({i, sym});
-  //     if (it != builder.goto_table.end()) {
-  //       std::cout << " " << it->second << " |";
-  //     } else {
-  //       std::cout << "     |";
-  //     }
-  //   }
-  //   std::cout << "\n";
-  // }
+  for (size_t i = 0; i < states.size(); ++i) {
+    printf("State %-3zu |", i);
+    for (const auto& sym : nonTerminalSymbols) {
+      auto it = builder.goto_table.find({i, sym});
+      if (it != builder.goto_table.end()) {
+        printf(" %-6d |", it->second);
+      } else {
+        printf(" %-6s |", "");
+      }
+    }
+    std::cout << "\n";
+  }
+}
+
+bool runTest(ActionTable& table, Grammar& grammar,
+             const std::vector<Symbol>& input, bool shouldAccept) {
+  std::stack<ActionTable::State> states;
+  states.push(0);
+  size_t pos = 0;
+
+  Symbol end_sym;
+  end_sym.type = Symbol::Type::EOF_TERMINAL;
+  end_sym.terminal.eof = 2;
+
+  while (true) {
+    ActionTable::State s = states.top();
+    Symbol a = (pos < input.size() ? input[pos] : end_sym);
+
+    auto it = table.action_table.find({s, a});
+    if (it == table.action_table.end()) {
+      std::cout << "Error at state " << s << ", symbol " << print_symbol(a)
+                << "\n";
+      return false;
+    }
+    Action act = it->second;
+    if (act.type == Action::SHIFT) {
+      states.push(act.next_state);
+      pos++;
+    } else if (act.type == Action::REDUCE) {
+      const Rule& r = grammar[act.rule_index];
+      for (size_t i = 0; i < r.rhs.size(); ++i) states.pop();
+      ActionTable::State t = states.top();
+
+      Symbol sym;
+      sym.type = Symbol::Type::NON_TERMINAL;
+      sym.nonterminal = r.lhs;
+      states.push(table.goto_table[{t, sym}]);
+    } else if (act.type == Action::ACCEPT) {
+      return (pos == input.size()) == shouldAccept;
+    }
+  }
 }
 
 void testActionTableGeneration() {
   std::cout << "Testing Action Table Generation\n";
 
   // Define Symbols
+  Symbol ID;
+  ID.type = Symbol::Type::ID_TERMINAL;
+  ID.terminal.literal = 0;
+
   Symbol CONSTANT;
   CONSTANT.type = Symbol::Type::LIT_TERMINAL;
   CONSTANT.terminal.literal = 1;
@@ -183,35 +303,28 @@ void testActionTableGeneration() {
   grammar.push_back({NonTerminal::FACT, {LPAREN, EXPR, RPAREN}});
   grammar.push_back({NonTerminal::FACT, {CONSTANT}});
 
+  // grammar.push_back({NonTerminal::EXPR, {EXPR, PLUS, TERM}});
+  // grammar.push_back({NonTerminal::EXPR, {EXPR, STAR, TERM}});
+  // grammar.push_back({NonTerminal::EXPR, {TERM}});
+  // grammar.push_back({NonTerminal::TERM, {CONSTANT}});
+  // grammar.push_back({NonTerminal::TERM, {ID}});
+
   // Build the Action Table
   ActionTable builder = ActionTable(grammar);
 
   // Generate States using buildStates() or other means
-  ActionTable::Table transitions;
-  std::vector<ActionTable::ItemSet> states;
-  builder.buildStates(states, transitions);
+  builder.build();
+  printItemSets(builder.states, grammar);
+  printPrettyActionAndGotoTables(builder, builder.states);
 
-  // Now build the Action Table using the states and transitions
-  builder.buildTables(states, transitions);
-
-  // Print out the actions for each state and symbol in the table
-  for (const auto& entry : builder.action_table) {
-    const auto& key = entry.first;
-    const auto& action = entry.second;
-
-    std::cout << "State " << key.first << ", Symbol ";
-    print_symbol(key.second);
-    std::cout << " --> Action: ";
-
-    if (action.type == Action::Type::SHIFT) {
-      std::cout << "SHIFT, Next State: " << action.next_state << std::endl;
-    } else if (action.type == Action::Type::REDUCE) {
-      std::cout << "REDUCE, Rule Index: " << action.rule_index << std::endl;
-    } else if (action.type == Action::Type::ACCEPT) {
-      std::cout << "ACCEPT" << std::endl;
-    }
-  }
-  printPrettyActionAndGotoTables(builder, states);
+  assert(runTest(builder, grammar, {CONSTANT, PLUS, CONSTANT, STAR, CONSTANT},
+                 true));  // 1+2*3
+  assert(runTest(builder, grammar,
+                 {LPAREN, CONSTANT, PLUS, CONSTANT, RPAREN, STAR, CONSTANT},
+                 true));
+  assert(runTest(builder, grammar,
+                 {CONSTANT, PLUS, LPAREN, CONSTANT, STAR, CONSTANT},
+                 false));  // bad
 
   // You can also verify if the action table is correct by checking specific
   // states or transitions. Example: check that State 0 on 'Expr' symbol gives a
@@ -229,6 +342,10 @@ void testActionTableGeneration() {
 
 void testActionTable() {
   // Define Symbols
+  Symbol ID;
+  ID.type = Symbol::Type::ID_TERMINAL;
+  ID.terminal.literal = 0;
+
   Symbol CONSTANT;
   CONSTANT.type = Symbol::Type::LIT_TERMINAL;
   CONSTANT.terminal.literal = 1;
@@ -269,6 +386,12 @@ void testActionTable() {
   grammar.push_back({NonTerminal::TERM, {FACT}});
   grammar.push_back({NonTerminal::FACT, {LPAREN, EXPR, RPAREN}});
   grammar.push_back({NonTerminal::FACT, {CONSTANT}});
+
+  // grammar.push_back({NonTerminal::EXPR, {EXPR, PLUS, TERM}});
+  // grammar.push_back({NonTerminal::EXPR, {EXPR, STAR, TERM}});
+  // grammar.push_back({NonTerminal::EXPR, {TERM}});
+  // grammar.push_back({NonTerminal::TERM, {CONSTANT}});
+  // grammar.push_back({NonTerminal::TERM, {ID}});
 
   // Build action table
   ActionTable builder(grammar);
