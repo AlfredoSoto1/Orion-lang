@@ -17,16 +17,10 @@ int main() {
   // )",
   //           "LEXER TEST");
 
-  // testParser(R"(
-  //   int a = 5;
-
-  //   void main() {
-  //     a += b * 20;
-  //   }
-  // )",
-  //            "PARSER TEST");
-
-  testParser();
+  testParser(R"(
+    1 + (2 * 4)
+  )",
+             "PARSER TEST");
 
   std::cout << "All tests passed!\n";
   return 0;

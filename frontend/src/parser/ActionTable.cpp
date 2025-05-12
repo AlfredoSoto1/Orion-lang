@@ -42,11 +42,13 @@ namespace compiler {
   }
 
   Action ActionTable::actionFrom(StateSymbol&& state_symbol) {
-    return action_table[state_symbol];
+    auto it = action_table.find(state_symbol);
+    return it != action_table.end() ? it->second : Action::error();
   }
 
   ActionTable::State ActionTable::stateFrom(StateSymbol&& state_symbol) {
-    return goto_table[state_symbol];
+    auto it = goto_table.find(state_symbol);
+    return it != goto_table.end() ? it->second : -1;
   }
 
   void ActionTable::obtainAllTerminals() {

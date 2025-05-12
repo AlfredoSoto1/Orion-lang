@@ -5,23 +5,28 @@
 namespace compiler {
 
   Parser::Parser(TokenStream& tokens, const Grammar& grammar) noexcept
-      : tokens(tokens), action_table(grammar) {}
+      : tokens(tokens), action_table(grammar), grammar(grammar) {
+    // Build action table
+    action_table.build();
+  }
 
   void Parser::parse() {
     std::vector<Symbol> symbols;
-    std::vector<uint32_t> states;
+    std::vector<ActionTable::State> states;
 
     // Initial conditions
+    size_t pos = 0;
     states.push_back(0);
     ParserResult lookahead = nextSymbol();
 
     while (true) {
       // Validate that the symbol is not garbage.
-      if (lookahead) {
+      if (!lookahead) {
+        std::cerr << "Symbol error.\n";
         return;  // Error
       }
 
-      uint32_t state = states.back();
+      ActionTable::State state = states.back();
       Action action = action_table.actionFrom({state, *lookahead});
 
       switch (action.type) {
@@ -36,6 +41,14 @@ namespace compiler {
         }
 
         case Action::REDUCE: {
+          const Rule& r = grammar[action.rule_index];
+          for (size_t i = 0; i < r.rhs.size(); ++i) states.pop_back();
+          ActionTable::State t = states.back();
+
+          Symbol sym;
+          sym.type = Symbol::Type::NON_TERMINAL;
+          sym.nonterminal = r.lhs;
+          states.push_back(action_table.stateFrom({t, sym}));
           break;
         }
 
@@ -50,46 +63,6 @@ namespace compiler {
       }
     }
   }
-
-  // bool Parser::reduce() {
-  //   bool reduced = false;
-
-  //   // Scan for a possible symbol combination starting from the 10th to 1rst
-  //   for (size_t len = std::min(10ull, symbols.size()); len >= 1; --len) {
-  //     // Check if the symbols to be scanned are greater than the maxium
-  //     // amount of symbols reduced.
-  //     if (len > symbols.size()) {
-  //       return false;
-  //     }
-
-  //     // Build the rule from the sequence of symbols
-  //     Rule_old candidate{};
-  //     for (size_t i = 0; i < len; ++i)
-  //       candidate.symbols[i] = symbols[symbols.size() - len + i];
-
-  //     // Check if the rule exists in the grammar table
-  //     auto range = grammar.table.equal_range(candidate);
-  //     for (auto it = range.first; it != range.second; ++it) {
-  //       // Apply reduction
-  //       Symbol reduced_symbol = it->second(*this);
-
-  //       // Check if the reduced symbol is depends on a higher context
-  //       // if (reduced_symbol.type == Symbol::Type::DEPENDS_ON_CONTEXT) {
-  //       //   continue;
-  //       // }
-
-  //       // Remove the symbols that were reduced from the stack
-  //       for (size_t i = 0; i < len; ++i) symbols.pop_back();
-
-  //       // Push the new reduced grammar into stack
-  //       symbols.push_back(reduced_symbol);
-  //       reduced = true;
-  //       break;
-  //     }
-  //   }
-
-  //   return reduced;
-  // }
 
   Parser::ParserResult Parser::nextSymbol() {
     auto result = tokens.next();

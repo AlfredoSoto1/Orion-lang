@@ -47,6 +47,7 @@ namespace compiler {
     void parse();
 
   private:
+    const Grammar& grammar;
     TokenStream& tokens;
     ActionTable action_table;
 
