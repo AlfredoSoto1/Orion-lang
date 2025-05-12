@@ -83,15 +83,13 @@ namespace compiler {
       case TokenType::KEYWORD:
         sym.type = Symbol::Type::KW_TERMINAL;
         sym.terminal.keyword = result->value.keyword;
-        break;
+        return sym;
       case TokenType::PUNCTUATOR:
         sym.type = Symbol::Type::PUN_TERMINAL;
         sym.terminal.punctuator = result->value.punctuator;
-        break;
+        return sym;
       case TokenType::IDENTIFIER:
-        sym.type = Symbol::Type::ID_TERMINAL;
-        sym.terminal.identifier = 0;
-        break;
+        return Symbol::identifier();
       case TokenType::CHAR_LITERAL:
       case TokenType::BOOL_LITERAL:
       case TokenType::STR8_LITERAL:
@@ -106,19 +104,14 @@ namespace compiler {
       case TokenType::UINT64_LITERAL:
       case TokenType::FLOAT32_LITERAL:
       case TokenType::FLOAT64_LITERAL:
-        sym.type = Symbol::Type::LIT_TERMINAL;
-        sym.terminal.literal = 1;
-        break;
+        return Symbol::literal();
       case TokenType::ENDOF:
         return Symbol::endOF();
-        break;
       default:
         // This should never happen
         return std::unexpected(
             ParserError{ParserErrorType::UNKNOWN_SYMBOL, result.error()});
     }
-
-    return sym;
   }
 
 }  // namespace compiler

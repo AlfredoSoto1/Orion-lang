@@ -21,17 +21,8 @@ void testParser(const std::string& input, const std::string& testName) {
   START.type = Symbol::Type::NON_TERMINAL;
   START.nonterminal = NonTerminal::START;
 
-  Symbol ENDOF;
-  ENDOF.type = Symbol::Type::EOF_TERMINAL;
-  ENDOF.terminal.eof = 2;
-
-  Symbol ID;
-  ID.type = Symbol::Type::ID_TERMINAL;
-  ID.terminal.literal = 0;
-
-  Symbol CONSTANT;
-  CONSTANT.type = Symbol::Type::LIT_TERMINAL;
-  CONSTANT.terminal.literal = 1;
+  Symbol ID = Symbol::identifier();
+  Symbol CONSTANT = Symbol::literal();
 
   Symbol PLUS;
   PLUS.type = Symbol::Type::PUN_TERMINAL;

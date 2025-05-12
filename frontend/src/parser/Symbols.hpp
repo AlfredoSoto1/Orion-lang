@@ -152,11 +152,33 @@ namespace compiler {
       return comparison == other.comparison;
     }
 
+    /**
+     * @brief This is a default way to create an ENDOF symbol.
+     *        The purpose of this function is to always generate the same symbol
+     *        characteristics for the ENDOF since its going to be used for
+     *        hashing.
+     *
+     * @return Symbol
+     */
     static Symbol endOF() {
-      Symbol end_sym;
-      end_sym.type = Type::EOF_TERMINAL;
-      end_sym.terminal.eof = 2;
-      return end_sym;
+      Symbol sym;
+      sym.type = Type::EOF_TERMINAL;
+      sym.terminal.eof = 2;
+      return sym;
+    }
+
+    static Symbol literal() {
+      Symbol sym;
+      sym.type = Type::LIT_TERMINAL;
+      sym.terminal.eof = 1;
+      return sym;
+    }
+
+    static Symbol identifier() {
+      Symbol sym;
+      sym.type = Type::ID_TERMINAL;
+      sym.terminal.eof = 0;
+      return sym;
     }
   };
 
