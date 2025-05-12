@@ -1,3 +1,4 @@
+#include "tests/ActionTableTests.hpp"
 #include "tests/LexerTests.hpp"
 #include "tests/ParserTests.hpp"
 
@@ -16,6 +17,8 @@ int main() {
   //   }
   // )",
   //           "LEXER TEST");
+
+  // testActionTable();
 
   testParser(R"(
     1 + (2 * 4)

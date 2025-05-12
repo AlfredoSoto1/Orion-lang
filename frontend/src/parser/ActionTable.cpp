@@ -33,8 +33,8 @@ namespace compiler {
     // This is just a one time creation, meaning that there is no need
     // to keep a reference alive after build method returns. Unless
     // its for debugging.
-    Table transitions;
-    std::vector<ItemSet> states;
+    // Table transitions;
+    // std::vector<ItemSet> states;
 
     // Build the action table
     buildStates(states, transitions);
@@ -217,10 +217,7 @@ namespace compiler {
           // Dot at end → reduce or accept
           if (item.rule_index == 0) {
             // Accept on end-of-input symbol
-            Symbol end_sym;
-            end_sym.type = Symbol::Type::EOF_TERMINAL;
-            end_sym.terminal.eof = 2;
-            action_table[{state, end_sym}] = Action::accept();
+            action_table[{state, Symbol::endOF()}] = Action::accept();
           } else {
             // Reduce by this rule for all terminals
             for (const Symbol& terminal : terminals) {

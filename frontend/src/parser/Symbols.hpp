@@ -151,6 +151,13 @@ namespace compiler {
       if (type != other.type) return false;
       return comparison == other.comparison;
     }
+
+    static Symbol endOF() {
+      Symbol end_sym;
+      end_sym.type = Type::EOF_TERMINAL;
+      end_sym.terminal.eof = 2;
+      return end_sym;
+    }
   };
 
   /**

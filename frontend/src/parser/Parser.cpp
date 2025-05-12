@@ -42,13 +42,17 @@ namespace compiler {
 
         case Action::REDUCE: {
           const Rule& r = grammar[action.rule_index];
-          for (size_t i = 0; i < r.rhs.size(); ++i) states.pop_back();
+          for (size_t i = 0; i < r.rhs.size(); ++i) {
+            states.pop_back();
+            symbols.pop_back();
+          }
           ActionTable::State t = states.back();
 
           Symbol sym;
           sym.type = Symbol::Type::NON_TERMINAL;
           sym.nonterminal = r.lhs;
           states.push_back(action_table.stateFrom({t, sym}));
+          symbols.push_back(sym);
           break;
         }
 
@@ -58,7 +62,7 @@ namespace compiler {
 
         case Action::ERROR:
           // Capture state and use that to display error type
-          std::cerr << "Syntax error.\n";
+          std::cerr << "Syntax error." << std::endl;
           return;
       }
     }
@@ -106,7 +110,7 @@ namespace compiler {
         sym.terminal.literal = 1;
         break;
       case TokenType::ENDOF:
-        sym.type = Symbol::Type::EOF_TERMINAL;
+        return Symbol::endOF();
         break;
       default:
         // This should never happen

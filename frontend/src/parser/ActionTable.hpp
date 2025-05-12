@@ -90,7 +90,7 @@ namespace compiler {
   private:
     const Grammar& grammar;
 
-  private:
+  public:
     struct Item {
       size_t rule_index;
       size_t dot_position;
@@ -107,7 +107,7 @@ namespace compiler {
       size_t operator()(const ItemSet& set) const;
     };
 
-  private:
+  public:
     using SymbolSet = std::unordered_set<Symbol, SymbolHash>;
     using ItemSetState = std::unordered_map<ItemSet, State, ItemSetHasher>;
 
@@ -120,8 +120,8 @@ namespace compiler {
     SymbolSet terminals;
 
     // // Just for testing, can be removed once everything works
-    // Table transitions;
-    // std::vector<ItemSet> states;
+    Table transitions;
+    std::vector<ItemSet> states;
 
   private:
     void obtainAllTerminals();
