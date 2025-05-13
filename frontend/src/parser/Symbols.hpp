@@ -167,6 +167,13 @@ namespace compiler {
       return sym;
     }
 
+    static Symbol start() {
+      Symbol sym;
+      sym.type = Type::NON_TERMINAL;
+      sym.nonterminal = NonTerminal::START;
+      return sym;
+    }
+
     static Symbol literal() {
       Symbol sym;
       sym.type = Type::LIT_TERMINAL;

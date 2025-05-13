@@ -63,13 +63,12 @@ namespace compiler {
     using StateSymbol = std::pair<State, Symbol>;
 
   public:
-    explicit ActionTable(const Grammar& grammar) noexcept;
-
     /**
-     * @brief Builds the action table
+     * @brief Construct a new Action Table object
      *
+     * @param grammar
      */
-    void build();
+    explicit ActionTable(const Grammar& grammar) noexcept;
 
     /**
      * @brief Returns the corresponding action from a state symbol.
@@ -81,11 +80,12 @@ namespace compiler {
 
     /**
      * @brief Returns the corresponding state from a state symbol.
+     *        Returns (-1) if the state symbol doesnt map to a state.
      *
      * @param state_symbol
      * @return State
      */
-    State stateFrom(StateSymbol&& state_symbol);
+    State gotoFrom(StateSymbol&& state_symbol);
 
   private:
     const Grammar& grammar;

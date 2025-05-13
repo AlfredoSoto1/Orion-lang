@@ -26,9 +26,7 @@ namespace compiler {
   ActionTable::ActionTable(const Grammar& grammar) noexcept
       : grammar(grammar), terminals() {
     obtainAllTerminals();
-  }
 
-  void ActionTable::build() {
     // Stack allocate the table transitions and item-set states.
     // This is just a one time creation, meaning that there is no need
     // to keep a reference alive after build method returns. Unless
@@ -46,7 +44,7 @@ namespace compiler {
     return it != action_table.end() ? it->second : Action::error();
   }
 
-  ActionTable::State ActionTable::stateFrom(StateSymbol&& state_symbol) {
+  ActionTable::State ActionTable::gotoFrom(StateSymbol&& state_symbol) {
     auto it = goto_table.find(state_symbol);
     return it != goto_table.end() ? it->second : -1;
   }
@@ -60,10 +58,7 @@ namespace compiler {
       }
     }
 
-    Symbol end_sym;
-    end_sym.type = Symbol::Type::EOF_TERMINAL;
-    end_sym.terminal.eof = 2;
-    terminals.insert(end_sym);
+    terminals.insert(Symbol::endOF());
   }
 
   ActionTable::ItemSet ActionTable::closure(const ItemSet& items) {

@@ -312,7 +312,6 @@ void testActionTable() {
 
   // Build action table
   ActionTable builder(grammar);
-  builder.build();
 
   /**
    *
