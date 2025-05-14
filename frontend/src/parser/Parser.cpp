@@ -2,17 +2,14 @@
 
 #include <iostream>
 
-#include "ParseStack.hpp"
-
 namespace compiler {
 
   Parser::Parser(TokenStream& tokens, const Grammar& grammar) noexcept
-      : tokens(tokens), action_table(grammar), grammar(grammar) {}
+      : tokens(tokens), action_table(grammar), grammar(grammar), symbols() {}
 
-  void Parser::parse() {
+  Parser::ParserResult Parser::parse() {
     // Prepare parse stack and first lookahead symbol
-    ParseStack symbols = ParseStack();
-    ParserResult lookahead = nextSymbol();
+    SymbolResult lookahead = nextSymbol();
 
     // Set an initial symbol to start parsing
     symbols.push({Symbol::start(), 0});
@@ -20,8 +17,7 @@ namespace compiler {
     while (true) {
       // Validate that the symbol is not garbage.
       if (!lookahead) {
-        std::cerr << "Symbol error.\n";
-        return;  // Error
+        return triggerError(lookahead.error());
       }
 
       // Obtain action from the current state and symbol
@@ -59,31 +55,28 @@ namespace compiler {
           // it means that the parsing process was not completed correctly, and
           // it is a false accept that it was passed.
           if (symbols.size() > 2) {
-            std::cout << "Error at parsing.\n";
-            return;
+            return triggerError(std::nullopt);
           }
 
           // Return a new result containing the ProgramAST
           std::cout << "Parsing successful.\n";
-          return;
+          return ASTProgram{};
         }
 
         case Action::ERROR:
-          // Capture state and use that to display error type
-          std::cerr << "Syntax error." << std::endl;
-          return;
+          return triggerError(std::nullopt);
       }
     }
   }
 
-  Parser::ParserResult Parser::nextSymbol() {
+  Parser::SymbolResult Parser::nextSymbol() {
     // Consume token and move to next
     auto result = tokens.next();
 
     // Check if token has any defect
     if (!result) {
-      return std::unexpected(
-          ParserError{ParserErrorType::LEXER_ERROR, result.error()});
+      return std::unexpected(ParserError{.type = ParserErrorType::LEXER_ERROR,
+                                         .lexer_error = result.error()});
     }
 
     // Map the token to the specified symbol
@@ -119,8 +112,48 @@ namespace compiler {
       default:
         // This should never happen
         return std::unexpected(
-            ParserError{ParserErrorType::UNKNOWN_SYMBOL, result.error()});
+            ParserError{ParserErrorType::UNKNOWN_SYMBOL, {}});
     }
+  }
+
+  Parser::ParserResult Parser::triggerError(std::optional<ParserError> error) {
+    // If the given parameter has an error, return that as
+    // main error first.
+    if (error.has_value()) {
+      return std::unexpected(*error);
+    }
+
+    const auto& top = symbols.peekTop();
+
+    std::vector<Symbol> expected_symbols;
+    std::vector<std::vector<Symbol>> expected_rhs;
+
+    for (const Symbol& s : grammar.symbols) {
+      if (!s.isTerminal()) continue;
+
+      Action a = action_table.actionFrom({top.state, s});
+      if (a.type == Action::ERROR) continue;
+
+      expected_symbols.push_back(s);
+
+      if (a.type == Action::REDUCE) {
+        const Rule& rule = grammar[a.rule_index];
+        expected_rhs.push_back(rule.rhs);
+      } else if (a.type == Action::SHIFT) {
+        // Optional: Add a special case for SHIFT
+        expected_rhs.push_back({s});
+      } else if (a.type == Action::ACCEPT) {
+        // Accept usually corresponds to an empty RHS or final rule
+        // expected_rhs.emplace_back();
+      }
+    }
+
+    return std::unexpected(
+        ParserError{.type = ParserErrorType::UNEXPECTED_SYMBOL,
+                    .unex_symbol = current_lookahead,
+                    .expected_symbols = std::move(expected_symbols),
+                    .expected_rhs = std::move(expected_rhs),
+                    .lexer_error = std::nullopt});
   }
 
 }  // namespace compiler

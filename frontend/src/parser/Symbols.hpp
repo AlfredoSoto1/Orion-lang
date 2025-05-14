@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sstream>
 #include <vector>
 
 #include "tokens/Keyword.hpp"
@@ -186,6 +187,33 @@ namespace compiler {
       sym.type = Type::ID_TERMINAL;
       sym.terminal.eof = 0;
       return sym;
+    }
+
+    std::string toString() {
+      std::ostringstream oss;
+
+      switch (type) {
+        case Symbol::Type::NON_TERMINAL:
+          oss << "<NT:" << static_cast<int>(nonterminal) << ">";
+          break;
+        case Symbol::Type::PUN_TERMINAL:
+          oss << "<PU:'" << PunctuatorHandler::toString(terminal.punctuator)
+              << "'>";
+          break;
+        case Symbol::Type::KW_TERMINAL:
+          oss << "<KW:'" << KeywordHandler::toString(terminal.keyword) << "'>";
+          break;
+        case Symbol::Type::LIT_TERMINAL:
+          oss << "<LT>";
+          break;
+        case Symbol::Type::ID_TERMINAL:
+          oss << "<ID>";
+          break;
+        default:
+          oss << "ENDOF";
+      }
+
+      return oss.str();
     }
   };
 

@@ -1,14 +1,19 @@
 #pragma once
 
 #include <expected>
+#include <optional>
 #include <unordered_map>
 
 #include "ActionTable.hpp"
+#include "ParseStack.hpp"
 #include "ParserError.hpp"
 #include "Symbols.hpp"
 #include "tokens/TokenStream.hpp"
 
 namespace compiler {
+
+  // TEMP
+  class ASTProgram {};
 
   /**
    * @brief A recursive descent parser for a C/C++-like language.
@@ -25,7 +30,8 @@ namespace compiler {
      *        Contains either a successfully parsed Symbol or a ParserError
      *        describing the failure.
      */
-    using ParserResult = std::expected<Symbol, ParserError>;
+    using SymbolResult = std::expected<Symbol, ParserError>;
+    using ParserResult = std::expected<ASTProgram, ParserError>;
 
   public:
     /**
@@ -43,16 +49,23 @@ namespace compiler {
      *        This function drives the parsing process. It iteratively applies
      *        grammar rules and builds up a higher-level representation of the
      *        input structure.
+     *
+     * @return ParserResult
      */
-    void parse();
+    ParserResult parse();
 
   private:
     const Grammar& grammar;
     TokenStream& tokens;
     ActionTable action_table;
+    ParseStack symbols;
+
+    struct ParserState {
+    } parser_state;
 
   private:
     bool reduce();
-    ParserResult nextSymbol();
+    SymbolResult nextSymbol();
+    ParserResult triggerError(std::optional<ParserError> error);
   };
 }  // namespace compiler
