@@ -189,7 +189,7 @@ namespace compiler {
       return sym;
     }
 
-    std::string toString() {
+    std::string toString() const {
       std::ostringstream oss;
 
       switch (type) {
@@ -197,11 +197,10 @@ namespace compiler {
           oss << "<NT:" << static_cast<int>(nonterminal) << ">";
           break;
         case Symbol::Type::PUN_TERMINAL:
-          oss << "<PU:'" << PunctuatorHandler::toString(terminal.punctuator)
-              << "'>";
+          oss << PunctuatorHandler::toString(terminal.punctuator);
           break;
         case Symbol::Type::KW_TERMINAL:
-          oss << "<KW:'" << KeywordHandler::toString(terminal.keyword) << "'>";
+          oss << KeywordHandler::toString(terminal.keyword);
           break;
         case Symbol::Type::LIT_TERMINAL:
           oss << "<LT>";
@@ -210,7 +209,7 @@ namespace compiler {
           oss << "<ID>";
           break;
         default:
-          oss << "ENDOF";
+          oss << "<ENDOF>";
       }
 
       return oss.str();

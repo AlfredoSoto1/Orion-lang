@@ -231,4 +231,22 @@ namespace compiler {
       }
     }
   }
+
+  std::vector<Symbol> compiler::ActionTable::validSymbols(State state) const {
+    std::vector<Symbol> result;
+    std::unordered_set<Symbol, SymbolHash> seen;
+
+    for (const auto& [state_symbol, action] : action_table) {
+      if (state_symbol.first == state && action.type != Action::ERROR) {
+        const Symbol& sym = state_symbol.second;
+        // Avoid duplicates
+        if (seen.insert(sym).second) {
+          result.push_back(sym);
+        }
+      }
+    }
+
+    return result;
+  }
+
 }  // namespace compiler

@@ -20,27 +20,41 @@ namespace compiler {
   public:
     /**
      * @brief Constructs a lexer with the given source code.
+     *
+     * @param filename The name of the source file.
      * @param src The source code to tokenize.
      */
-    explicit Lexer(std::string_view src) noexcept;
+    explicit Lexer(std::string_view filename, std::string_view src) noexcept;
 
     /**
      * @brief Advances to the next token in the source code.
+     *
      * @return LexerResult contining the next token or a lexer error.
      */
     LexerResult advance();
 
     /**
-     * @brief Prints token for debugging.
+     * @brief Returns the current state of the lexer.
      *
-     * @param token
+     * @return LexerState
      */
-    void debugPrintToken(const Token& token) noexcept;
+    LexerState state() const noexcept;
 
   private:
-    uint32_t pos;
-    uint32_t line;
+    friend class TokenStream;
+
+  private:
+    size_t pos;
+    size_t line;
+    size_t line_pos;
+    size_t prev_pos;
+    size_t prev_line;
+    size_t prev_line_pos;
+    size_t token_start_pos;
     std::string_view source;
+    std::string_view filename;
+
+    Token last_token;
 
     using DParseResult = std::expected<double, LexerError>;
     using IParseResult = std::expected<uint64_t, LexerError>;
@@ -67,7 +81,7 @@ namespace compiler {
     bool isValidBaseNumber(char c, uint8_t base) const noexcept;
 
     TokenType typeSufixFrom() noexcept;
-    uint8_t basePrefixFrom(uint32_t& lex_start) noexcept;
+    uint8_t basePrefixFrom(size_t& lex_start) noexcept;
 
     char toEscapedChar(char c) const noexcept;
     IParseResult toInt(std::string_view integer_literal, uint8_t base) const;
@@ -77,7 +91,7 @@ namespace compiler {
     // Move the current position forward if the current character
     // meets the condition and it hasn't reached the end of file.
     template <typename Condition>
-    uint32_t nextWhile(Condition&& condition) noexcept {
+    size_t nextWhile(Condition&& condition) noexcept {
       while (condition(peek()) && peek() != '\0') {
         if (peek() == '\n') line++;
         pos++;

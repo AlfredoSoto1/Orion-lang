@@ -2,6 +2,8 @@
 
 #include <string_view>
 
+#include "tokens/Tokens.hpp"
+
 namespace compiler {
 
   enum class LexerErrorType {
@@ -46,14 +48,28 @@ namespace compiler {
   };
 
   /**
-   * @brief
+   * @brief Represents the current state of the lexer.
+   *
+   */
+  struct LexerState {
+    size_t line;
+    size_t column;
+    std::string_view filename;
+    std::string_view line_text;
+    Token last_token;
+  };
+
+  /**
+   * @brief Represents a lexer error.
    *
    */
   class LexerError final {
   public:
-    uint32_t line;
-    uint32_t pos;
+    LexerState state;
     LexerErrorType type;
+
+    explicit LexerError(LexerState state, LexerErrorType type) noexcept
+        : state(state), type(type) {}
 
   public:
     /**
@@ -61,6 +77,6 @@ namespace compiler {
      *
      * @return std::string
      */
-    std::string_view to_string();
+    std::string_view toString() const noexcept;
   };
 }  // namespace compiler

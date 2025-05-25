@@ -21,7 +21,7 @@ int main() {
   // testActionTable();
 
   testParser(R"(
-    1 + (2 * 4)
+    &&*** + (2 * 4)
   )",
              "PARSER TEST");
 

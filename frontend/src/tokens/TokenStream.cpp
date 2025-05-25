@@ -19,11 +19,13 @@ namespace compiler {
     do {
       Lexer::LexerResult result = lexer.advance();
 
-      // Check for any token defect
+      // Check for any token defects
       if (!result) {
         LexerError error = result.error();
-        std::cerr << "Lexer Error at line " << error.line << ", col "
-                  << error.pos << ": " << error.to_string() << "\n";
+        std::cerr << "Lexer Error at line " << error.state.line << ", col "
+                  << error.state.column << " on token "
+                  << error.state.last_token.toString(lexer.source) << ": "
+                  << error.toString() << "\n";
         break;
       }
 
@@ -79,6 +81,10 @@ namespace compiler {
     // Checks if the current token is ENDOF. This means that
     // there are no more tokens after.
     return buffer[bpos % buffer_size].type != TokenType::ENDOF;
+  }
+
+  const LexerState& TokenStream::state() const noexcept {
+    return lexer.state();
   }
 
 }  // namespace compiler

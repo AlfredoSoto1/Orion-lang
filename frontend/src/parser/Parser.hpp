@@ -59,13 +59,12 @@ namespace compiler {
     TokenStream& tokens;
     ActionTable action_table;
     ParseStack symbols;
-
-    struct ParserState {
-    } parser_state;
+    SymbolResult lookahead;
 
   private:
     bool reduce();
+
     SymbolResult nextSymbol();
-    ParserResult triggerError(std::optional<ParserError> error);
+    ParserResult actionError();
   };
 }  // namespace compiler

@@ -1,7 +1,8 @@
 #pragma once
 
+#include <expected>
 #include <optional>
-#include <string_view>
+#include <string>
 #include <vector>
 
 #include "ActionTable.hpp"
@@ -14,17 +15,22 @@ namespace compiler {
     UNKNOWN_SYMBOL,     // Unknown symbol passed by lexer
     LEXER_ERROR,        // Lexer Error when reading token
     UNEXPECTED_SYMBOL,  // Unexpected symbol when parsing
-    INCOMPLETE_ACCEPT,  // Passes an incomplete AST to be accepted
+    INTERNAL_ERROR,     // Passes an incomplete AST to be accepted
+  };
+
+  struct UnexpectedSymbolError final {
+    Symbol found;
+    LexerState lexer_state;
+    std::vector<Symbol> expected;
+    std::vector<std::vector<Symbol>> expected_rhs;
   };
 
   class ParserError final {
   public:
     ParserErrorType type;
 
-    Symbol unex_symbol;
-    uint32_t ex_symbol;
-    std::vector<Symbol> ex_rhs;
     std::optional<LexerError> lexer_error;
+    std::optional<UnexpectedSymbolError> unex_symbol_error;
 
   public:
     /**
@@ -32,7 +38,50 @@ namespace compiler {
      *
      * @return std::string
      */
-    std::string_view to_string();
+    std::string toString() const noexcept;
+
+  public:
+    /**
+     * @brief Creates a ParserError from a LexerError
+     *
+     * @param error
+     * @return std::unexpected<ParserError>
+     */
+    static std::unexpected<ParserError> makeLexerError(LexerError error);
+
+    /**
+     * @brief Creates a ParserError for an unknown symbol.
+     *
+     * @return std::unexpected<ParserError>
+     */
+    static std::unexpected<ParserError> makeUnknownSymbolError();
+
+    /**
+     * @brief Creates a ParserError for an unknown error.
+     *
+     * @return std::unexpected<ParserError>
+     */
+    static std::unexpected<ParserError> makeUnknownError();
+
+    /**
+     * @brief Creates a ParserError for an internal error.
+     *
+     * @return std::unexpected<ParserError>
+     */
+    static std::unexpected<ParserError> makeInternalError();
+
+    /**
+     * @brief Creates a ParserError for an unexpected symbol.
+     *
+     * @param found
+     * @param lexer_state
+     * @param expected
+     * @param expected_rhs
+     * @return std::unexpected<ParserError>
+     */
+    static std::unexpected<ParserError> makeUnexSymbolError(
+        Symbol found, LexerState lexer_state, std::vector<Symbol> expected,
+        std::vector<std::vector<Symbol>> expected_rhs);
   };
 
 }  // namespace compiler

@@ -30,9 +30,27 @@ namespace compiler {
      * @return const Token&
      */
     const Token& peek() const noexcept;
+
+    /**
+     * @brief Peeks the next token in the stream without consuming it.
+     *
+     * @return const Token&
+     */
     const Token& peekNext() const noexcept;
 
+    /**
+     * @brief Returns the next token in the stream.
+     *
+     * @return Lexer::LexerResult
+     */
     Lexer::LexerResult next();
+
+    /**
+     * @brief Returns the current state of the lexer.
+     *
+     * @return const LexerState&
+     */
+    const LexerState& state() const noexcept;
 
   private:
     Lexer& lexer;

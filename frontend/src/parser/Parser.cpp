@@ -5,11 +5,15 @@
 namespace compiler {
 
   Parser::Parser(TokenStream& tokens, const Grammar& grammar) noexcept
-      : tokens(tokens), action_table(grammar), grammar(grammar), symbols() {}
+      : tokens(tokens),
+        action_table(grammar),
+        grammar(grammar),
+        symbols(),
+        lookahead(Symbol::endOF()) {}
 
   Parser::ParserResult Parser::parse() {
     // Prepare parse stack and first lookahead symbol
-    SymbolResult lookahead = nextSymbol();
+    this->lookahead = nextSymbol();
 
     // Set an initial symbol to start parsing
     symbols.push({Symbol::start(), 0});
@@ -17,7 +21,7 @@ namespace compiler {
     while (true) {
       // Validate that the symbol is not garbage.
       if (!lookahead) {
-        return triggerError(lookahead.error());
+        return std::unexpected(lookahead.error());
       }
 
       // Obtain action from the current state and symbol
@@ -55,7 +59,7 @@ namespace compiler {
           // it means that the parsing process was not completed correctly, and
           // it is a false accept that it was passed.
           if (symbols.size() > 2) {
-            return triggerError(std::nullopt);
+            return ParserError::makeInternalError();
           }
 
           // Return a new result containing the ProgramAST
@@ -64,7 +68,7 @@ namespace compiler {
         }
 
         case Action::ERROR:
-          return triggerError(std::nullopt);
+          return actionError();
       }
     }
   }
@@ -75,8 +79,7 @@ namespace compiler {
 
     // Check if token has any defect
     if (!result) {
-      return std::unexpected(ParserError{.type = ParserErrorType::LEXER_ERROR,
-                                         .lexer_error = result.error()});
+      return ParserError::makeLexerError(result.error());
     }
 
     // Map the token to the specified symbol
@@ -111,49 +114,43 @@ namespace compiler {
         return sym;
       default:
         // This should never happen
-        return std::unexpected(
-            ParserError{ParserErrorType::UNKNOWN_SYMBOL, {}});
+        return ParserError::makeUnknownSymbolError();
     }
   }
 
-  Parser::ParserResult Parser::triggerError(std::optional<ParserError> error) {
-    // If the given parameter has an error, return that as
-    // main error first.
-    if (error.has_value()) {
-      return std::unexpected(*error);
+  Parser::ParserResult Parser::actionError() {
+    if (symbols.isEmpty()) {
+      return ParserError::makeUnknownError();  // Defensive fallback
     }
 
-    const auto& top = symbols.peekTop();
+    // Get the invalid symbol (lookahead) that caused the error
+    SymbolResult bad_symbol = lookahead;
+    if (!bad_symbol) {
+      return ParserError::makeUnknownSymbolError();  // Defensive fallback
+    }
 
-    std::vector<Symbol> expected_symbols;
+    // Obtain the last symbol state from the stack
+    const auto& sym_st = symbols.peekTop();
+    const ActionTable::State current_state = sym_st.state;
+
+    // Get all valid symbols for the current state
+    std::vector<Symbol> expected_symbols =
+        action_table.validSymbols(current_state);
+
+    // Get all RHSs that start with those expected symbols (for helpful
+    // suggestions)
     std::vector<std::vector<Symbol>> expected_rhs;
-
-    for (const Symbol& s : grammar.symbols) {
-      if (!s.isTerminal()) continue;
-
-      Action a = action_table.actionFrom({top.state, s});
-      if (a.type == Action::ERROR) continue;
-
-      expected_symbols.push_back(s);
-
-      if (a.type == Action::REDUCE) {
-        const Rule& rule = grammar[a.rule_index];
-        expected_rhs.push_back(rule.rhs);
-      } else if (a.type == Action::SHIFT) {
-        // Optional: Add a special case for SHIFT
-        expected_rhs.push_back({s});
-      } else if (a.type == Action::ACCEPT) {
-        // Accept usually corresponds to an empty RHS or final rule
-        // expected_rhs.emplace_back();
+    for (const auto& sym : expected_symbols) {
+      for (const Rule& rule : grammar) {
+        if (*rule.rhs.begin() == sym) {
+          expected_rhs.push_back(rule.rhs);
+        }
       }
     }
 
-    return std::unexpected(
-        ParserError{.type = ParserErrorType::UNEXPECTED_SYMBOL,
-                    .unex_symbol = current_lookahead,
-                    .expected_symbols = std::move(expected_symbols),
-                    .expected_rhs = std::move(expected_rhs),
-                    .lexer_error = std::nullopt});
+    return ParserError::makeUnexSymbolError(*lookahead, tokens.state(),
+                                            std::move(expected_symbols),
+                                            std::move(expected_rhs));
   }
 
 }  // namespace compiler

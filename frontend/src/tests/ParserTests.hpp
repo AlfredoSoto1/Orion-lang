@@ -63,8 +63,14 @@ void testParser(const std::string& input, const std::string& testName) {
   grammar.push_back({NonTerminal::FACT, {CONSTANT}});
 
   std::cout << "Testing input: \"" << input << "\" (" << testName << ")\n";
-  Lexer lexer(input);
+  Lexer lexer("no_source.c", input);
   TokenStream stream = TokenStream(lexer, 10);
   Parser parser = Parser(stream, grammar);
-  parser.parse();
+  auto result = parser.parse();
+
+  if (result) {
+    std::cout << "Parse successful!\n";
+  } else {
+    std::cerr << "Parse error: " << result.error().toString() << "\n";
+  }
 }

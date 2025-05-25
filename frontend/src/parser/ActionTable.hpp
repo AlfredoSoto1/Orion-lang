@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "Symbols.hpp"
 
@@ -86,6 +87,14 @@ namespace compiler {
      * @return State
      */
     State gotoFrom(StateSymbol&& state_symbol);
+
+    /**
+     * @brief Returns a list of valid terminal symbols for a given state.
+     *
+     * @param state
+     * @return std::vector<Symbol>
+     */
+    std::vector<Symbol> validSymbols(State state) const;
 
   private:
     const Grammar& grammar;
